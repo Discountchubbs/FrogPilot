@@ -12,18 +12,14 @@ FrogPilotDataPanel::FrogPilotDataPanel(FrogPilotSettingsWindow *parent) : FrogPi
         parent->keepScreenOn = true;
 
         deleteDrivingDataBtn->setEnabled(false);
-
         deleteDrivingDataBtn->setValue(tr("Deleting..."));
 
         realdataDir.removeRecursively();
         realdataDir.mkpath(".");
 
         deleteDrivingDataBtn->setValue(tr("Deleted!"));
-
         util::sleep_for(2500);
-
         deleteDrivingDataBtn->setEnabled(true);
-
         deleteDrivingDataBtn->setValue("");
 
         parent->keepScreenOn = false;
@@ -45,7 +41,6 @@ FrogPilotDataPanel::FrogPilotDataPanel(FrogPilotSettingsWindow *parent) : FrogPi
             parent->keepScreenOn = true;
 
             screenRecordingsBtn->setEnabled(false);
-
             screenRecordingsBtn->setValue(tr("Deleting..."));
 
             screenRecordingsBtn->setVisibleButton(1, false);
@@ -54,11 +49,8 @@ FrogPilotDataPanel::FrogPilotDataPanel(FrogPilotSettingsWindow *parent) : FrogPi
             QFile::remove(recordingsDir.absoluteFilePath(selection));
 
             screenRecordingsBtn->setValue(tr("Deleted!"));
-
             util::sleep_for(2500);
-
             screenRecordingsBtn->setEnabled(true);
-
             screenRecordingsBtn->setValue("");
 
             screenRecordingsBtn->setVisibleButton(1, true);
@@ -75,7 +67,6 @@ FrogPilotDataPanel::FrogPilotDataPanel(FrogPilotSettingsWindow *parent) : FrogPi
           parent->keepScreenOn = true;
 
           screenRecordingsBtn->setEnabled(false);
-
           screenRecordingsBtn->setValue(tr("Deleting..."));
 
           screenRecordingsBtn->setVisibleButton(0, false);
@@ -85,11 +76,8 @@ FrogPilotDataPanel::FrogPilotDataPanel(FrogPilotSettingsWindow *parent) : FrogPi
           recordingsDir.mkpath(".");
 
           screenRecordingsBtn->setValue(tr("Deleted!"));
-
           util::sleep_for(2500);
-
           screenRecordingsBtn->setEnabled(true);
-
           screenRecordingsBtn->setValue("");
 
           screenRecordingsBtn->setVisibleButton(0, true);
@@ -112,7 +100,6 @@ FrogPilotDataPanel::FrogPilotDataPanel(FrogPilotSettingsWindow *parent) : FrogPi
             parent->keepScreenOn = true;
 
             screenRecordingsBtn->setEnabled(false);
-
             screenRecordingsBtn->setValue(tr("Renaming..."));
 
             screenRecordingsBtn->setVisibleButton(0, false);
@@ -120,15 +107,11 @@ FrogPilotDataPanel::FrogPilotDataPanel(FrogPilotSettingsWindow *parent) : FrogPi
 
             QString newPath = recordingsDir.absoluteFilePath(newName);
             QString oldPath = recordingsDir.absoluteFilePath(selection);
-
             QFile::rename(oldPath, newPath);
 
             screenRecordingsBtn->setValue(tr("Renamed!"));
-
             util::sleep_for(2500);
-
             screenRecordingsBtn->setEnabled(true);
-
             screenRecordingsBtn->setValue("");
 
             screenRecordingsBtn->setVisibleButton(0, true);
@@ -159,7 +142,6 @@ FrogPilotDataPanel::FrogPilotDataPanel(FrogPilotSettingsWindow *parent) : FrogPi
           parent->keepScreenOn = true;
 
           frogpilotBackupBtn->setEnabled(false);
-
           frogpilotBackupBtn->setValue(tr("Backing up..."));
 
           frogpilotBackupBtn->setVisibleButton(1, false);
@@ -183,11 +165,8 @@ FrogPilotDataPanel::FrogPilotDataPanel(FrogPilotSettingsWindow *parent) : FrogPi
           }
 
           frogpilotBackupBtn->setValue(tr("Backup created!"));
-
           util::sleep_for(2500);
-
           frogpilotBackupBtn->setEnabled(true);
-
           frogpilotBackupBtn->setValue("");
 
           frogpilotBackupBtn->setVisibleButton(1, true);
@@ -205,11 +184,12 @@ FrogPilotDataPanel::FrogPilotDataPanel(FrogPilotSettingsWindow *parent) : FrogPi
           std::thread([=]() {
             parent->keepScreenOn = true;
 
+            frogpilotBackupBtn->setEnabled(false);
+            frogpilotBackupBtn->setValue(tr("Deleting..."));
+
             frogpilotBackupBtn->setVisibleButton(0, false);
             frogpilotBackupBtn->setVisibleButton(2, false);
             frogpilotBackupBtn->setVisibleButton(3, false);
-
-            frogpilotBackupBtn->setValue(tr("Deleting..."));
 
             QDir dirToDelete(backupDir.filePath(selection));
             if (selection.endsWith(".tar.gz")) {
@@ -218,11 +198,10 @@ FrogPilotDataPanel::FrogPilotDataPanel(FrogPilotSettingsWindow *parent) : FrogPi
               dirToDelete.removeRecursively();
             }
 
+            frogpilotBackupBtn->setValue(tr("Deleted!"));
             util::sleep_for(2500);
-
-            frogpilotBackupBtn->setValue("");
-
             frogpilotBackupBtn->setEnabled(true);
+            frogpilotBackupBtn->setValue("");
 
             frogpilotBackupBtn->setVisibleButton(0, true);
             frogpilotBackupBtn->setVisibleButton(2, true);
@@ -239,23 +218,19 @@ FrogPilotDataPanel::FrogPilotDataPanel(FrogPilotSettingsWindow *parent) : FrogPi
           parent->keepScreenOn = true;
 
           frogpilotBackupBtn->setEnabled(false);
+          frogpilotBackupBtn->setValue(tr("Deleting..."));
 
           frogpilotBackupBtn->setVisibleButton(0, false);
           frogpilotBackupBtn->setVisibleButton(1, false);
           frogpilotBackupBtn->setVisibleButton(3, false);
 
-          frogpilotBackupBtn->setValue(tr("Deleting..."));
-
           backupDir.removeRecursively();
           backupDir.mkpath(".");
 
           frogpilotBackupBtn->setValue(tr("Deleted!"));
-
           util::sleep_for(2500);
-
-          frogpilotBackupBtn->setValue("");
-
           frogpilotBackupBtn->setEnabled(true);
+          frogpilotBackupBtn->setValue("");
 
           frogpilotBackupBtn->setVisibleButton(0, true);
           frogpilotBackupBtn->setVisibleButton(1, true);
@@ -273,6 +248,7 @@ FrogPilotDataPanel::FrogPilotDataPanel(FrogPilotSettingsWindow *parent) : FrogPi
             parent->keepScreenOn = true;
 
             frogpilotBackupBtn->setEnabled(false);
+            frogpilotBackupBtn->setValue(tr("Restoring..."));
 
             frogpilotBackupBtn->setVisibleButton(0, false);
             frogpilotBackupBtn->setVisibleButton(1, false);
@@ -291,8 +267,6 @@ FrogPilotDataPanel::FrogPilotDataPanel(FrogPilotSettingsWindow *parent) : FrogPi
               sourcePath = extractDirectory;
             }
 
-            frogpilotBackupBtn->setValue(tr("Restoring..."));
-
             std::filesystem::create_directories(targetPath);
             std::system(("rsync -av --delete -l " + sourcePath + "/ " + targetPath + "/").c_str());
 
@@ -306,11 +280,8 @@ FrogPilotDataPanel::FrogPilotDataPanel(FrogPilotSettingsWindow *parent) : FrogPi
             params.putBool("AutomaticUpdates", false);
 
             frogpilotBackupBtn->setValue(tr("Restored!"));
-
             util::sleep_for(2500);
-
             frogpilotBackupBtn->setValue(tr("Rebooting..."));
-
             util::sleep_for(2500);
 
             Hardware::reboot();
@@ -337,7 +308,6 @@ FrogPilotDataPanel::FrogPilotDataPanel(FrogPilotSettingsWindow *parent) : FrogPi
           parent->keepScreenOn = true;
 
           toggleBackupBtn->setEnabled(false);
-
           toggleBackupBtn->setValue(tr("Backing up..."));
 
           toggleBackupBtn->setVisibleButton(1, false);
@@ -354,11 +324,8 @@ FrogPilotDataPanel::FrogPilotDataPanel(FrogPilotSettingsWindow *parent) : FrogPi
           std::filesystem::rename(inProgressBackupPath, fullBackupPath);
 
           toggleBackupBtn->setValue(tr("Backup created!"));
-
           util::sleep_for(2500);
-
           toggleBackupBtn->setEnabled(true);
-
           toggleBackupBtn->setValue("");
 
           toggleBackupBtn->setVisibleButton(1, true);
@@ -376,20 +343,20 @@ FrogPilotDataPanel::FrogPilotDataPanel(FrogPilotSettingsWindow *parent) : FrogPi
           std::thread([=]() {
             parent->keepScreenOn = true;
 
+            toggleBackupBtn->setEnabled(false);
+            toggleBackupBtn->setValue(tr("Deleting..."));
+
             toggleBackupBtn->setVisibleButton(0, false);
             toggleBackupBtn->setVisibleButton(2, false);
             toggleBackupBtn->setVisibleButton(3, false);
 
-            toggleBackupBtn->setValue(tr("Deleting..."));
-
             QDir dirToDelete(backupDir.filePath(selection));
             dirToDelete.removeRecursively();
 
+            toggleBackupBtn->setValue(tr("Deleted!"));
             util::sleep_for(2500);
-
-            toggleBackupBtn->setValue("");
-
             toggleBackupBtn->setEnabled(true);
+            toggleBackupBtn->setValue("");
 
             toggleBackupBtn->setVisibleButton(0, true);
             toggleBackupBtn->setVisibleButton(2, true);
@@ -406,23 +373,19 @@ FrogPilotDataPanel::FrogPilotDataPanel(FrogPilotSettingsWindow *parent) : FrogPi
           parent->keepScreenOn = true;
 
           toggleBackupBtn->setEnabled(false);
+          toggleBackupBtn->setValue(tr("Deleting..."));
 
           toggleBackupBtn->setVisibleButton(0, false);
           toggleBackupBtn->setVisibleButton(1, false);
           toggleBackupBtn->setVisibleButton(3, false);
 
-          toggleBackupBtn->setValue(tr("Deleting..."));
-
           backupDir.removeRecursively();
           backupDir.mkpath(".");
 
           toggleBackupBtn->setValue(tr("Deleted!"));
-
           util::sleep_for(2500);
-
-          toggleBackupBtn->setValue("");
-
           toggleBackupBtn->setEnabled(true);
+          toggleBackupBtn->setValue("");
 
           toggleBackupBtn->setVisibleButton(0, true);
           toggleBackupBtn->setVisibleButton(1, true);
@@ -440,12 +403,11 @@ FrogPilotDataPanel::FrogPilotDataPanel(FrogPilotSettingsWindow *parent) : FrogPi
             parent->keepScreenOn = true;
 
             toggleBackupBtn->setEnabled(false);
+            toggleBackupBtn->setValue(tr("Restoring..."));
 
             toggleBackupBtn->setVisibleButton(0, false);
             toggleBackupBtn->setVisibleButton(1, false);
             toggleBackupBtn->setVisibleButton(2, false);
-
-            toggleBackupBtn->setValue(tr("Restoring..."));
 
             std::string sourcePath = backupDir.filePath(selection).toStdString();
             std::string targetPath = "/data/params/d";
@@ -457,12 +419,9 @@ FrogPilotDataPanel::FrogPilotDataPanel(FrogPilotSettingsWindow *parent) : FrogPi
             updateFrogPilotToggles();
 
             toggleBackupBtn->setValue(tr("Restored!"));
-
             util::sleep_for(2500);
-
-            toggleBackupBtn->setValue("");
-
             toggleBackupBtn->setEnabled(true);
+            toggleBackupBtn->setValue("");
 
             toggleBackupBtn->setVisibleButton(0, true);
             toggleBackupBtn->setVisibleButton(1, true);

@@ -65,7 +65,6 @@ ENABLED_STATES = (State.preEnabled, *ACTIVE_STATES)
 class Controls:
   def __init__(self, CI=None):
     self.params = Params()
-
     if CI is None:
       cloudlog.info("controlsd is waiting for CarParams")
       with car.CarParams.from_bytes(self.params.get("CarParams", block=True)) as msg:
@@ -194,7 +193,7 @@ class Controls:
     self.onroad_distance_pressed = False
     self.steer_saturated_event_triggered = False
 
-    self.clip_curves = self.frogpilot_toggles.clipped_curvature_model
+    self.planner_curves = self.frogpilot_toggles.planner_curvature_model
     self.radarless_model = self.frogpilot_toggles.radarless_model
     self.use_old_long = self.frogpilot_toggles.old_long_api
 
@@ -625,7 +624,7 @@ class Controls:
 
       if self.use_old_long:
         t_since_plan = (self.sm.frame - self.sm.recv_frame['longitudinalPlan']) * DT_CTRL
-        actuators.accel = self.LoC.update_old_long(CC.longActive, CS, long_plan, pid_accel_limits, t_since_plan)
+        actuators.accel = self.LoC.update_old_long(CC.longActive, CS, long_plan, pid_accel_limits, t_since_plan, self.frogpilot_toggles)
       else:
         actuators.accel = self.LoC.update(CC.longActive, CS, long_plan.aTarget, long_plan.shouldStop or self.sm['frogpilotPlan'].forcingStopLength < 1, pid_accel_limits, self.frogpilot_toggles)
 
@@ -633,7 +632,7 @@ class Controls:
         actuators.speed = long_plan.speeds[-1]
 
       # Steering PID loop and lateral MPC
-      self.desired_curvature = clip_curvature(CS.vEgo, self.desired_curvature, model_v2.action.desiredCurvature, self.clip_curves)
+      self.desired_curvature = clip_curvature(CS.vEgo, self.desired_curvature, model_v2.action.desiredCurvature, self.planner_curves)
       actuators.curvature = self.desired_curvature
       actuators.steer, actuators.steeringAngleDeg, lac_log = self.LaC.update(CC.latActive, CS, self.VM, lp,
                                                                              self.steer_limited, self.desired_curvature,
@@ -723,12 +722,16 @@ class Controls:
     return CC, lac_log, FPCC
 
   def update_frogpilot_variables(self, CS):
-    self.always_on_lateral_active |= self.frogpilot_toggles.always_on_lateral_main or CS.cruiseState.enabled
-    self.always_on_lateral_active &= self.frogpilot_toggles.always_on_lateral_set and CS.cruiseState.available
+    main_enabled = (self.frogpilot_toggles.always_on_lateral_main or CS.cruiseState.enabled or (self.frogpilot_toggles.always_on_lateral_lkas and self.sm['frogpilotCarState'].alwaysOnLateralEnabled))
+    if not hasattr(self, 'always_on_lateral_active'):
+        self.always_on_lateral_active = False
+
+    self.always_on_lateral_active = main_enabled
     self.always_on_lateral_active &= CS.gearShifter not in NON_DRIVING_GEARS
     self.always_on_lateral_active &= self.sm['frogpilotPlan'].lateralCheck
     self.always_on_lateral_active &= self.sm['liveCalibration'].calPerc >= 1
-    self.always_on_lateral_active &= not (self.frogpilot_toggles.always_on_lateral_lkas and self.sm['frogpilotCarState'].alwaysOnLateralDisabled)
+    self.always_on_lateral_active &= ((self.frogpilot_toggles.always_on_lateral_lkas) and self.sm['frogpilotCarState'].alwaysOnLateralEnabled) or \
+                                     ((self.frogpilot_toggles.always_on_lateral_main) and CS.cruiseState.available)
     self.always_on_lateral_active &= not (CS.brakePressed and CS.vEgo < self.frogpilot_toggles.always_on_lateral_pause_speed) or CS.standstill
     self.always_on_lateral_active = bool(self.always_on_lateral_active)
 
@@ -792,6 +795,10 @@ class Controls:
     hudControl.lanesVisible = self.enabled
     hudControl.leadVisible = self.sm['longitudinalPlan'].hasLead
     hudControl.leadDistanceBars = self.personality + 1
+
+    leadOne = self.sm['radarState'].leadOne
+    hudControl.leadDistance = leadOne.dRel if leadOne.status else 0
+    hudControl.leadRelSpeed = leadOne.vRel if leadOne.status else 0
 
     hudControl.rightLaneVisible = True
     hudControl.leftLaneVisible = True

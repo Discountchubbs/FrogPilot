@@ -49,7 +49,7 @@ inline QMap<QString, QString> africaMap = {
   {"KM", "Comoros"}, {"CG", "Congo (Brazzaville)"}, {"CD", "Congo (Kinshasa)"},
   {"DJ", "Djibouti"}, {"EG", "Egypt"}, {"GQ", "Equatorial Guinea"},
   {"ER", "Eritrea"}, {"ET", "Ethiopia"}, {"GA", "Gabon"},
-  {"GM", "Gambia"},  {"GH", "Ghana"}, {"GN", "Guinea"},
+  {"GM", "Gambia"}, {"GH", "Ghana"}, {"GN", "Guinea"},
   {"GW", "Guinea-Bissau"}, {"CI", "Ivory Coast"}, {"KE", "Kenya"},
   {"LS", "Lesotho"}, {"LR", "Liberia"}, {"LY", "Libya"},
   {"MG", "Madagascar"}, {"MW", "Malawi"}, {"ML", "Mali"},
@@ -126,23 +126,18 @@ inline QMap<QString, QString> southAmericaMap = {
   {"VE", "Venezuela"}
 };
 
-inline bool isMapdRunning() {
-  return std::system("pgrep mapd > /dev/null 2>&1") == 0;
-}
-
-namespace fs = std::filesystem;
-
 inline QString calculateDirectorySize(const QString &directoryPath) {
-  constexpr uintmax_t oneMB = 1024 * 1024;
-  constexpr uintmax_t oneGB = 1024 * 1024 * 1024;
+  namespace fs = std::filesystem;
 
-  uintmax_t totalSize = 0;
+  constexpr double oneMB = 1024 * 1024;
+  constexpr double oneGB = 1024 * 1024 * 1024;
+
   fs::path path(directoryPath.toStdString());
-
   if (!fs::exists(path) || !fs::is_directory(path)) {
     return "0 MB";
   }
 
+  double totalSize = 0;
   for (fs::recursive_directory_iterator iter(path, fs::directory_options::skip_permission_denied), end; iter != end; ++iter) {
     const fs::directory_entry &entry = *iter;
     if (entry.is_regular_file()) {
@@ -151,35 +146,28 @@ inline QString calculateDirectorySize(const QString &directoryPath) {
   }
 
   if (totalSize >= oneGB) {
-    return QString::number(static_cast<double>(totalSize) / oneGB, 'f', 2) + " GB";
-  } else {
-    return QString::number(static_cast<double>(totalSize) / oneMB, 'f', 2) + " MB";
+    return QString::number(totalSize / oneGB, 'f', 2) + " GB";
   }
+  return QString::number(totalSize / oneMB, 'f', 2) + " MB";
+}
+
+inline QString daySuffix(int day) {
+  if (day % 10 == 1 && day != 11) return "st";
+  if (day % 10 == 2 && day != 12) return "nd";
+  if (day % 10 == 3 && day != 13) return "rd";
+  return "th";
 }
 
 inline QString formatCurrentDate() {
   QDate currentDate = QDate::currentDate();
-  int day = currentDate.day();
-
-  QString suffix;
-  if (day % 10 == 1 && day != 11) {
-    suffix = "st";
-  } else if (day % 10 == 2 && day != 12) {
-    suffix = "nd";
-  } else if (day % 10 == 3 && day != 13) {
-    suffix = "rd";
-  } else {
-    suffix = "th";
-  }
-
-  return currentDate.toString("MMMM d'") + suffix + QString(", %1").arg(currentDate.year());
+  return currentDate.toString("MMMM d'") + daySuffix(currentDate.day()) + QString(", %1").arg(currentDate.year());
 }
 
-inline QString formatElapsedTime(qint64 elapsedMilliseconds) {
-  qint64 totalSeconds = elapsedMilliseconds / 1000;
-  qint64 hours = totalSeconds / 3600;
-  qint64 minutes = (totalSeconds % 3600) / 60;
-  qint64 seconds = totalSeconds % 60;
+inline QString formatElapsedTime(float elapsedMilliseconds) {
+  int totalSeconds = elapsedMilliseconds / 1000;
+  int hours = totalSeconds / 3600;
+  int minutes = (totalSeconds % 3600) / 60;
+  int seconds = totalSeconds % 60;
 
   QString formattedTime;
   if (hours > 0) {
@@ -190,7 +178,27 @@ inline QString formatElapsedTime(qint64 elapsedMilliseconds) {
   }
   formattedTime += QString::number(seconds) + (seconds == 1 ? " second" : " seconds");
 
-  return formattedTime;
+  return formattedTime.trimmed();
+}
+
+inline QString formatETA(float elapsedTime, int downloadedFiles, int previousDownloadedFiles, int totalFiles, QDateTime &startTime) {
+  static QDateTime estimatedFinishTime;
+
+  static float previousElapsedTime;
+
+  if (downloadedFiles != previousDownloadedFiles) {
+    estimatedFinishTime = startTime.addMSecs((elapsedTime * totalFiles) / downloadedFiles);
+  } else {
+    estimatedFinishTime = estimatedFinishTime.addSecs((previousElapsedTime - elapsedTime) / 1000);
+  }
+  previousElapsedTime = elapsedTime;
+
+  int remainingTime = QDateTime::currentDateTime().secsTo(estimatedFinishTime);
+
+  QString estimatedFinishTimeStr = estimatedFinishTime.toString("h:mm AP");
+  QString remainingTimeStr = formatElapsedTime(remainingTime * 1000);
+
+  return QString("%1 (%2)").arg(remainingTimeStr).arg(estimatedFinishTimeStr);
 }
 
 class MapSelectionControl : public QWidget {
@@ -203,19 +211,19 @@ private:
   void loadSelectedMaps();
   void updateSelectedMaps();
 
+  bool isCountry;
+
   Params params;
 
-  QButtonGroup *buttonGroup;
+  QButtonGroup *mapButtons;
 
-  QGridLayout *gridLayout;
+  QGridLayout *mapLayout;
 
   QJsonArray mapSelections;
 
-  QList<QAbstractButton *> buttons;
+  QList<QAbstractButton *> maps;
 
   QMap<QString, QString> mapData;
 
   QString selectionType;
-
-  bool isCountry;
 };

@@ -34,7 +34,7 @@ FrogPilotVisualsPanel::FrogPilotVisualsPanel(FrogPilotSettingsWindow *parent) : 
     {"ModelUI", tr("Model UI"), tr("Customize the model visualizations on the screen."), "../frogpilot/assets/toggle_icons/icon_vtc.png"},
     {"DynamicPathWidth", tr("Dynamic Path Width"), tr("Automatically adjusts the width of the driving path display based on the current engagement state:\n\nFully engaged = 100%\nAlways On Lateral Active = 75%\nFully disengaged = 50%"), ""},
     {"LaneLinesWidth", tr("Lane Lines Width"), tr("Controls the thickness the lane lines appear on the display.\n\nDefault matches the MUTCD standard of 4 inches."), ""},
-    {"PathEdgeWidth", tr("Path Edges Width"), tr("Controls the width of the edges of the driving path to represent different modes and statuses.\n\nDefault is 20% of the total path width.\n\nColor Guide:\n- Blue: Navigation\n- Light Blue: 'Always On Lateral'\n- Green: Default\n- Orange: 'Experimental Mode'\n- Red: 'Traffic Mode'\n- Yellow: 'Conditional Experimental Mode' Overridden"), ""},
+    {"PathEdgeWidth", tr("Path Edges Width"), tr("Controls the width of the edges of the driving path to represent different modes and statuses.\n\nDefault is 20% of the total path width.\n\nColor Guide:\n\n- Blue: Navigation\n- Light Blue: 'Always On Lateral'\n- Green: Default\n- Orange: 'Experimental Mode'\n- Red: 'Traffic Mode'\n- Yellow: 'Conditional Experimental Mode' Overridden"), ""},
     {"PathWidth", tr("Path Width"), tr("Controls how wide the driving path appears on your screen.\n\nDefault (6.1 feet / 1.9 meters) matches the width of a 2019 Lexus ES 350."), ""},
     {"RoadEdgesWidth", tr("Road Edges Width"), tr("Controls how thick the road edges appear on the display.\n\nDefault matches half of the MUTCD standard lane line width of 4 inches."), ""},
     {"UnlimitedLength", tr("'Unlimited' Road UI"), tr("Extends the display of the path, lane lines, and road edges as far as the model can see."), ""},
@@ -175,7 +175,7 @@ FrogPilotVisualsPanel::FrogPilotVisualsPanel(FrogPilotSettingsWindow *parent) : 
           modifiedDeveloperWidgetKeys.erase("ShowStoppingPoint");
         }
 
-        if (!params.getBool("ConditionalExperimentalMode")) {
+        if (!params.getBool("ConditionalExperimental")) {
           modifiedDeveloperWidgetKeys.erase("ShowCEMStatus");
         }
 
@@ -303,25 +303,24 @@ void FrogPilotVisualsPanel::showEvent(QShowEvent *event) {
   hideToggles();
 }
 
-void FrogPilotVisualsPanel::updateMetric() {
-  bool previousIsMetric = isMetric;
-  isMetric = params.getBool("IsMetric");
-
-  if (isMetric != previousIsMetric) {
-    double smallDistanceConversion = isMetric ? INCH_TO_CM : CM_TO_INCH;
-    double distanceConversion = isMetric ? FOOT_TO_METER : METER_TO_FOOT;
+void FrogPilotVisualsPanel::updateMetric(bool metric, bool bootRun) {
+  static bool previousMetric;
+  if (metric != previousMetric && !bootRun) {
+    double smallDistanceConversion = metric ? INCH_TO_CM : CM_TO_INCH;
+    double distanceConversion = metric ? FOOT_TO_METER : METER_TO_FOOT;
 
     params.putFloatNonBlocking("LaneLinesWidth", params.getFloat("LaneLinesWidth") * smallDistanceConversion);
     params.putFloatNonBlocking("RoadEdgesWidth", params.getFloat("RoadEdgesWidth") * smallDistanceConversion);
 
     params.putFloatNonBlocking("PathWidth", params.getFloat("PathWidth") * distanceConversion);
   }
+  previousMetric = metric;
 
   FrogPilotParamValueControl *laneLinesWidthToggle = static_cast<FrogPilotParamValueControl*>(toggles["LaneLinesWidth"]);
   FrogPilotParamValueControl *pathWidthToggle = static_cast<FrogPilotParamValueControl*>(toggles["PathWidth"]);
   FrogPilotParamValueControl *roadEdgesWidthToggle = static_cast<FrogPilotParamValueControl*>(toggles["RoadEdgesWidth"]);
 
-  if (isMetric) {
+  if (metric) {
     laneLinesWidthToggle->setDescription(tr("Adjust how thick the lane lines appear on the display.\n\nDefault matches the Vienna standard of 10 centimeters."));
     roadEdgesWidthToggle->setDescription(tr("Adjust how thick the road edges appear on the display.\n\nDefault matches half of the Vienna standard of 10 centimeters."));
 

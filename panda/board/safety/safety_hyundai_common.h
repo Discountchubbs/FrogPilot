@@ -43,6 +43,7 @@ void hyundai_common_init(uint16_t param) {
 #else
   hyundai_longitudinal = false;
 #endif
+
 }
 
 void hyundai_common_cruise_state_check(const bool cruise_engaged) {
@@ -61,6 +62,15 @@ void hyundai_common_cruise_state_check(const bool cruise_engaged) {
     cruise_engaged_prev = cruise_engaged;
   }
 }
+void hyundai_lkas_button_check(const bool lkas_pressed) {
+   // Check LKAS button press
+  if (lkas_pressed && !lkas_pressed_prev) {
+    if (alternative_experience & ALT_EXP_ALWAYS_ON_LATERAL) {
+      aol_allowed = true;
+    }
+  }
+  lkas_pressed_prev = lkas_pressed;
+}
 
 void hyundai_common_cruise_buttons_check(const int cruise_button, const bool main_button) {
   if (main_button && main_button != cruise_main_prev) {
@@ -68,6 +78,10 @@ void hyundai_common_cruise_buttons_check(const int cruise_button, const bool mai
       controls_allowed = false;
     }
     acc_main_on = !acc_main_on;
+    if (acc_main_on && (alternative_experience & ALT_EXP_ALWAYS_ON_LATERAL)) {
+      aol_allowed = true;
+      controls_allowed = false;
+    }
   }
   cruise_main_prev = main_button;
   if ((cruise_button == HYUNDAI_BTN_RESUME) || (cruise_button == HYUNDAI_BTN_SET) || (cruise_button == HYUNDAI_BTN_CANCEL) || main_button) {
@@ -92,6 +106,7 @@ void hyundai_common_cruise_buttons_check(const int cruise_button, const bool mai
     cruise_button_prev = cruise_button;
   }
 }
+
 
 uint32_t hyundai_common_canfd_compute_checksum(const CANPacket_t *to_push) {
   int len = GET_LEN(to_push);

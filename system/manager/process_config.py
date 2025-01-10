@@ -69,8 +69,8 @@ procs = [
   NativeProcess("stream_encoderd", "system/loggerd", ["./encoderd", "--stream"], notcar),
   NativeProcess("loggerd", "system/loggerd", ["./loggerd"], allow_logging),
   NativeProcess("modeld", "selfdrive/modeld", ["./modeld"], run_new_modeld),
-  NativeProcess("mapsd", "selfdrive/navd", ["./mapsd"], only_onroad),
-  PythonProcess("navmodeld", "selfdrive.classic_modeld.navmodeld", only_onroad),
+  NativeProcess("mapsd", "selfdrive/navd", ["./mapsd"], run_classic_modeld),
+  PythonProcess("navmodeld", "selfdrive.classic_modeld.navmodeld", run_classic_modeld),
   NativeProcess("sensord", "system/sensord", ["./sensord"], only_onroad, enabled=not PC),
   NativeProcess("ui", "selfdrive/ui", ["./ui"], always_run, watchdog_max_dt=(5 if not PC else None)),
   PythonProcess("soundd", "selfdrive.ui.soundd", only_onroad),
@@ -84,7 +84,7 @@ procs = [
   PythonProcess("dmonitoringd", "selfdrive.monitoring.dmonitoringd", driverview, enabled=(not PC or WEBCAM)),
   PythonProcess("qcomgpsd", "system.qcomgpsd.qcomgpsd", qcomgps, enabled=TICI),
   #PythonProcess("ugpsd", "system.ugpsd", only_onroad, enabled=TICI),
-  PythonProcess("navd", "selfdrive.navd.navd", only_onroad),
+  PythonProcess("navd", "selfdrive.navd.navd", run_classic_modeld),
   PythonProcess("pandad", "selfdrive.pandad.pandad", always_run),
   PythonProcess("paramsd", "selfdrive.locationd.paramsd", only_onroad),
   NativeProcess("ubloxd", "system/ubloxd", ["./ubloxd"], ublox, enabled=TICI),
@@ -106,6 +106,7 @@ procs = [
   NativeProcess("classic_modeld", "selfdrive/classic_modeld", ["./classic_modeld"], run_classic_modeld),
   PythonProcess("fleet_manager", "selfdrive.frogpilot.fleetmanager.fleet_manager", always_run),
   PythonProcess("frogpilot_process", "selfdrive.frogpilot.frogpilot_process", always_run),
+  PythonProcess("mapd", "selfdrive.frogpilot.navigation.mapd", always_run),
 ]
 
 managed_processes = {p.name: p for p in procs}

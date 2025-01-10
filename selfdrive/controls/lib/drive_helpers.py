@@ -179,8 +179,8 @@ def rate_limit(new_value, last_value, dw_step, up_step):
   return clip(new_value, last_value + dw_step, last_value + up_step)
 
 
-def clip_curvature(v_ego, prev_curvature, new_curvature, clip_curves):
-  if clip_curves:
+def clip_curvature(v_ego, prev_curvature, new_curvature, planner_curves):
+  if planner_curves:
     new_curvature = clip(new_curvature, -MAX_CURVATURE, MAX_CURVATURE)
   v_ego = max(MIN_SPEED, v_ego)
   max_curvature_rate = MAX_LATERAL_JERK / (v_ego**2) # inexact calculation, check https://github.com/commaai/openpilot/pull/24755

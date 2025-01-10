@@ -12,8 +12,10 @@ FrogPilotUtilitiesPanel::FrogPilotUtilitiesPanel(FrogPilotSettingsWindow *parent
         flashPandaBtn->setEnabled(false);
         flashPandaBtn->setValue(tr("Flashing..."));
 
-        system("python3 /data/openpilot/panda/board/flash.py");
-        system("python3 /data/openpilot/panda/board/recover.py");
+        params_memory.putBool("FlashPanda", true);
+        while (params_memory.getBool("FlashPanda")) {
+          util::sleep_for(UI_FREQ);
+        }
 
         flashPandaBtn->setValue(tr("Flashed!"));
         util::sleep_for(2500);
@@ -25,7 +27,7 @@ FrogPilotUtilitiesPanel::FrogPilotUtilitiesPanel(FrogPilotSettingsWindow *parent
   });
   addItem(flashPandaBtn);
 
-  forceStartedBtn = new FrogPilotButtonsControl(tr("Force Started State"), tr("Forces openpilot either offroad or onroad."), {tr("OFFROAD"), tr("ONROAD"), tr("OFF")}, true);
+  FrogPilotButtonsControl *forceStartedBtn = new FrogPilotButtonsControl(tr("Force Started State"), tr("Forces openpilot either offroad or onroad."), {tr("OFFROAD"), tr("ONROAD"), tr("OFF")}, true);
   QObject::connect(forceStartedBtn, &FrogPilotButtonsControl::buttonClicked, [=](int id) {
     if (id == 0) {
       params_memory.putBool("ForceOffroad", true);
@@ -33,6 +35,9 @@ FrogPilotUtilitiesPanel::FrogPilotUtilitiesPanel(FrogPilotSettingsWindow *parent
     } else if (id == 1) {
       params_memory.putBool("ForceOffroad", false);
       params_memory.putBool("ForceOnroad", true);
+
+      util::sleep_for(1000);
+      params.put("CarParams", params.get("CarParamsPersistent"));
     } else if (id == 2) {
       params_memory.putBool("ForceOffroad", false);
       params_memory.putBool("ForceOnroad", false);

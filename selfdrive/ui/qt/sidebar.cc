@@ -61,7 +61,7 @@ void Sidebar::updateIcons() {
 
 void Sidebar::updateIcon(QLabel *&label, QMovie *&gif, const QString &gifPath, const QRect &btnRect, const QString &pngPath, bool &isGif) {
   QString selectedGifPath = gifPath;
-  if (qrand() % 100 == 0 && btnRect == home_btn && isRandomEvents) {
+  if (util::random_int(1, 100) == 100 && btnRect == home_btn && isRandomEvents) {
     selectedGifPath = randomEventGifPath;
   }
 

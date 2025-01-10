@@ -40,7 +40,7 @@ signals:
   void closePanel();
   void closeParentToggle();
   void closeSubParentToggle();
-  void updateMetric();
+  void updateMetric(bool metric, bool bootRun=false);
 
 private:
   QPushButton *sidebar_alert_widget;
@@ -90,7 +90,7 @@ public:
 
 signals:
   // FrogPilot signals
-  void updateMetric();
+  void updateMetric(bool metric, bool bootRun=false);
 
 public slots:
   void expandToggleDescription(const QString &param);

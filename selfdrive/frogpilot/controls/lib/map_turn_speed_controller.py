@@ -36,9 +36,9 @@ def calculate_curvature(p1, p2, p3):
 
 class MapTurnSpeedController:
   def get_map_curvature(self, v_ego):
-    target_velocities = json.loads(params_memory.get("MapTargetVelocities") or "{}")
-
     position = json.loads(params_memory.get("LastGPSPosition") or "{}")
+    if not position:
+      return 1e-6
     current_latitude = position["latitude"]
     current_longitude = position["longitude"]
 
@@ -46,11 +46,12 @@ class MapTurnSpeedController:
     minimum_idx = 0
     minimum_distance = 1000.0
 
+    target_velocities = json.loads(params_memory.get("MapTargetVelocities") or "[]")
     for i, target_velocity in enumerate(target_velocities):
-      latitude = target_velocity["latitude"]
-      longitude = target_velocity["longitude"]
+      target_latitude = target_velocity["latitude"]
+      target_longitude = target_velocity["longitude"]
 
-      distance = calculate_distance_to_point(current_latitude * TO_RADIANS, current_longitude * TO_RADIANS, latitude * TO_RADIANS, longitude * TO_RADIANS)
+      distance = calculate_distance_to_point(current_latitude * TO_RADIANS, current_longitude * TO_RADIANS, target_latitude * TO_RADIANS, target_longitude * TO_RADIANS)
       distances.append(distance)
 
       if distance < minimum_distance:

@@ -3,27 +3,27 @@
 
 #include "selfdrive/frogpilot/navigation/ui/navigation_functions.h"
 
-MapSelectionControl::MapSelectionControl(const QMap<QString, QString> &map, bool isCountry)
-  : buttonGroup(new QButtonGroup(this)), gridLayout(new QGridLayout(this)), mapData(map), isCountry(isCountry), selectionType(isCountry ? "nations" : "states") {
-  buttonGroup->setExclusive(false);
+MapSelectionControl::MapSelectionControl(const QMap<QString, QString> &map, bool isCountry) : mapData(map), isCountry(isCountry), selectionType(isCountry ? "nations" : "states") {
+  mapButtons = new QButtonGroup(this);
+  mapButtons->setExclusive(false);
+
+  mapLayout = new QGridLayout(this);
 
   QList<QString> keys = mapData.keys();
   for (int i = 0; i < keys.size(); ++i) {
     QPushButton *button = new QPushButton(mapData[keys[i]], this);
-
     button->setCheckable(true);
     button->setStyleSheet(buttonStyle);
-    button->setMinimumWidth(225);
 
-    gridLayout->addWidget(button, i / 3, i % 3);
-    buttonGroup->addButton(button, i);
+    mapButtons->addButton(button, i);
 
-    connect(button, &QPushButton::toggled, this, &MapSelectionControl::updateSelectedMaps);
+    mapLayout->addWidget(button, i / 3, i % 3);
+
+    QObject::connect(button, &QPushButton::toggled, this, &MapSelectionControl::updateSelectedMaps);
   }
 
-  buttons = buttonGroup->buttons();
-
-  mapSelections = QJsonDocument::fromJson(QByteArray::fromStdString(params.get("MapsSelected"))).object()[selectionType].toArray();
+  maps = mapButtons->buttons();
+  mapSelections = QJsonDocument::fromJson(QByteArray::fromStdString(params.get("MapsSelected"))).object().value(selectionType).toArray();
 
   loadSelectedMaps();
 }
@@ -31,8 +31,8 @@ MapSelectionControl::MapSelectionControl(const QMap<QString, QString> &map, bool
 void MapSelectionControl::loadSelectedMaps() {
   for (int i = 0; i < mapSelections.size(); ++i) {
     QString selectedKey = mapSelections[i].toString();
-    for (int j = 0; j < buttons.size(); ++j) {
-      QAbstractButton *button = buttons[j];
+    for (int j = 0; j < maps.size(); ++j) {
+      QAbstractButton *button = maps[j];
       if (button->text() == mapData.value(selectedKey)) {
         button->setChecked(true);
         break;
@@ -42,7 +42,7 @@ void MapSelectionControl::loadSelectedMaps() {
 }
 
 void MapSelectionControl::updateSelectedMaps() {
-  for (QAbstractButton *button : buttons) {
+  for (QAbstractButton *button : maps) {
     QString key = mapData.key(button->text());
     if (button->isChecked() && !mapSelections.contains(key)) {
       mapSelections.append(key);

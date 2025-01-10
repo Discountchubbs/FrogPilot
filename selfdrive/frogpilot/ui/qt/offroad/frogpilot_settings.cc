@@ -1,5 +1,3 @@
-#include "selfdrive/ui/qt/widgets/scrollview.h"
-
 #include "selfdrive/frogpilot/navigation/ui/maps_settings.h"
 #include "selfdrive/frogpilot/navigation/ui/primeless_settings.h"
 #include "selfdrive/frogpilot/ui/qt/offroad/data_settings.h"
@@ -67,12 +65,12 @@ void FrogPilotSettingsWindow::createPanelButtons(FrogPilotListWidget *list) {
   };
 
   std::vector<std::tuple<QString, QString, QString>> panelInfo = {
-    {tr("Alerts and Sounds"), tr("Manage FrogPilot's alerts and notifications."), "../frogpilot/assets/toggle_icons/icon_sound.png"},
-    {tr("Driving Controls"), tr("Adjust features that affect acceleration, braking, and steering."), "../frogpilot/assets/toggle_icons/icon_steering.png"},
-    {tr("Navigation"), tr("Download map data and configure 'Navigate On openpilot (NOO)'."), "../frogpilot/assets/toggle_icons/icon_map.png"},
-    {tr("System Management"), tr("Access tools, utilities, and device controls to maintain and troubleshoot FrogPilot."), "../frogpilot/assets/toggle_icons/icon_system.png"},
-    {tr("Theme and Appearance"), tr("Customize the openpilot theme, UI appearance, and on-road widgets."), "../frogpilot/assets/toggle_icons/icon_display.png"},
-    {tr("Vehicle Controls"), tr("Configure vehicle-specific settings for supported makes and models."), "../frogpilot/assets/toggle_icons/icon_vehicle.png"}
+    {tr("Alerts and Sounds"), tr("Manage FrogPilot's alerts and sounds."), "../frogpilot/assets/toggle_icons/icon_sound.png"},
+    {tr("Driving Controls"), tr("Manage FrogPilot's features that affect acceleration, braking, and steering."), "../frogpilot/assets/toggle_icons/icon_steering.png"},
+    {tr("Navigation"), tr("Manage map data to be used with 'Curve Speed Control' and 'Speed Limit Controller' and setup 'Navigate On openpilot (NOO)' without a comma prime subscription."), "../frogpilot/assets/toggle_icons/icon_map.png"},
+    {tr("System Management"), tr("Manage the device's internal settings along with other tools and utilities to maintain and troubleshoot FrogPilot."), "../frogpilot/assets/toggle_icons/icon_system.png"},
+    {tr("Theme and Appearance"), tr("Manage openpilot's theme and onroad widgets."), "../frogpilot/assets/toggle_icons/icon_display.png"},
+    {tr("Vehicle Controls"), tr("Manage vehicle-specific settings."), "../frogpilot/assets/toggle_icons/icon_vehicle.png"}
   };
 
   for (size_t i = 0; i < panelInfo.size(); ++i) {
@@ -114,13 +112,17 @@ void FrogPilotSettingsWindow::createPanelButtons(FrogPilotListWidget *list) {
 FrogPilotSettingsWindow::FrogPilotSettingsWindow(SettingsWindow *parent) : QFrame(parent) {
   mainLayout = new QStackedLayout(this);
 
-  frogpilotWidget = new QWidget(this);
+  QWidget *frogpilotWidget = new QWidget(this);
   QVBoxLayout *frogpilotLayout = new QVBoxLayout(frogpilotWidget);
   frogpilotLayout->setContentsMargins(50, 25, 50, 25);
+  frogpilotWidget->setLayout(frogpilotLayout);
+
+  frogpilotPanel = new ScrollView(frogpilotWidget, this);
+  mainLayout->addWidget(frogpilotPanel);
+  frogpilotPanel->setWidget(frogpilotWidget);
 
   FrogPilotListWidget *list = new FrogPilotListWidget(this);
   frogpilotLayout->addWidget(list);
-  mainLayout->addWidget(frogpilotWidget);
 
   std::vector<QString> togglePresets{tr("Minimal"), tr("Standard"), tr("Advanced"), tr("Developer")};
   ButtonParamControl *togglePreset = new ButtonParamControl("TuningLevel", tr("Tuning Level"),
@@ -132,8 +134,8 @@ FrogPilotSettingsWindow::FrogPilotSettingsWindow(SettingsWindow *parent) : QFram
                                      "../frogpilot/assets/toggle_icons/icon_customization.png",
                                      togglePresets);
 
-  int timeTo100FPHours = 100 - (paramsTracking.getInt("FrogPilotMinutes") / 60);
-  int timeTo250OPHours = 250 - (params.getInt("openpilotMinutes") / 60);
+  int timeTo100FPHours = 1 - (paramsTracking.getInt("FrogPilotMinutes") / 60);
+  int timeTo250OPHours = 1 - (params.getInt("openpilotMinutes") / 60);
   togglePreset->setEnabledButtons(3, timeTo100FPHours <= 0 || timeTo250OPHours <= 0);
 
   QObject::connect(togglePreset, &ButtonParamControl::buttonClicked, [this](int id) {
@@ -167,10 +169,11 @@ FrogPilotSettingsWindow::FrogPilotSettingsWindow(SettingsWindow *parent) : QFram
   QObject::connect(uiState(), &UIState::offroadTransition, this, &FrogPilotSettingsWindow::updateVariables);
   QObject::connect(uiState(), &UIState::uiUpdate, this, &FrogPilotSettingsWindow::updateState);
 
-  frogpilotToggleLevels = QJsonDocument::fromJson(QString::fromStdString(params_memory.get("FrogPilotTuningLevels", true)).toUtf8()).object();
+  frogpilotToggleLevels = QJsonDocument::fromJson(params_memory.get("FrogPilotTuningLevels", true).c_str()).object();
   tuningLevel = params.getInt("TuningLevel");
 
   closeParentToggle();
+  updateMetric(params.getBool("IsMetric"), true);
   updateVariables();
 }
 
@@ -179,7 +182,7 @@ void FrogPilotSettingsWindow::hideEvent(QHideEvent *event) {
 }
 
 void FrogPilotSettingsWindow::closePanel() {
-  mainLayout->setCurrentWidget(frogpilotWidget);
+  mainLayout->setCurrentWidget(frogpilotPanel);
   panelOpen = false;
   updateFrogPilotToggles();
 }
@@ -188,7 +191,7 @@ void FrogPilotSettingsWindow::updateState() {
   UIState *s = uiState();
   UIScene &scene = s->scene;
 
-  scene.keep_screen_on = panelOpen && keepScreenOn;
+  scene.frogpilot_panel_active = panelOpen && keepScreenOn;
 }
 
 void FrogPilotSettingsWindow::updateVariables() {

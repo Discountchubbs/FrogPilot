@@ -1,6 +1,7 @@
 #pragma once
 
 #include "selfdrive/ui/qt/offroad/settings.h"
+#include "selfdrive/ui/qt/widgets/scrollview.h"
 
 class FrogPilotSettingsWindow : public QFrame {
   Q_OBJECT
@@ -9,8 +10,6 @@ public:
   explicit FrogPilotSettingsWindow(SettingsWindow *parent);
 
   void updateVariables();
-
-  QJsonObject frogpilotToggleLevels;
 
   bool hasAutoTune = true;
   bool hasBSM = true;
@@ -40,6 +39,8 @@ public:
 
   int tuningLevel;
 
+  QJsonObject frogpilotToggleLevels;
+
 signals:
   void closeMapBoxInstructions();
   void closeMapSelection();
@@ -50,13 +51,15 @@ signals:
   void openPanel();
   void openParentToggle();
   void openSubParentToggle();
-  void updateMetric();
+  void updateMetric(bool metric, bool bootRun=false);
 
 private:
   void closePanel();
   void createPanelButtons(FrogPilotListWidget *list);
   void hideEvent(QHideEvent *event) override;
   void updateState();
+
+  bool panelOpen;
 
   FrogPilotButtonsControl *drivingPanelButtons;
   FrogPilotButtonsControl *navigationPanelButtons;
@@ -68,7 +71,5 @@ private:
 
   QStackedLayout *mainLayout;
 
-  QWidget *frogpilotWidget;
-
-  bool panelOpen;
+  ScrollView *frogpilotPanel;
 };

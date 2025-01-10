@@ -11,14 +11,14 @@ LongCtrlState = car.CarControl.Actuators.LongControlState
 
 
 def long_control_state_trans(CP, active, long_control_state, v_ego,
-                             should_stop, brake_pressed, cruise_standstill, frogpilot_variables):
+                             should_stop, brake_pressed, cruise_standstill, frogpilot_toggles):
   # Ignore cruise standstill if car has a gas interceptor
   cruise_standstill = cruise_standstill and not CP.enableGasInterceptor
   stopping_condition = should_stop
   starting_condition = (not should_stop and
                         not cruise_standstill and
                         not brake_pressed)
-  started_condition = v_ego > frogpilot_variables.vEgoStarting
+  started_condition = v_ego > frogpilot_toggles.vEgoStarting
 
   if not active:
     long_control_state = LongCtrlState.off
@@ -92,21 +92,27 @@ class LongControl:
     self.long_control_state = LongCtrlState.off
     self.pid = PIDController((CP.longitudinalTuning.kpBP, CP.longitudinalTuning.kpV),
                              (CP.longitudinalTuning.kiBP, CP.longitudinalTuning.kiV),
-                             k_f=CP.longitudinalTuning.kf, rate=1 / DT_CTRL)
+                             k_f=CP.longitudinalTuning.kf, rate=1 / DT_CTRL,
+                             longitudinal_pid=True)
     self.v_pid = 0.0
     self.last_output_accel = 0.0
+
+    # FrogPilot variables
+    self.CP = CP
+
+    self.updated_pid = False
 
   def reset(self):
     self.pid.reset()
 
-  def update(self, active, CS, a_target, should_stop, accel_limits, frogpilot_variables):
+  def update(self, active, CS, a_target, should_stop, accel_limits, frogpilot_toggles):
     """Update longitudinal control. This updates the state machine and runs a PID loop"""
     self.pid.neg_limit = accel_limits[0]
     self.pid.pos_limit = accel_limits[1]
 
     self.long_control_state = long_control_state_trans(self.CP, active, self.long_control_state, CS.vEgo,
                                                        should_stop, CS.brakePressed,
-                                                       CS.cruiseState.standstill, frogpilot_variables)
+                                                       CS.cruiseState.standstill, frogpilot_toggles)
     if self.long_control_state == LongCtrlState.off:
       self.reset()
       output_accel = 0.
@@ -115,17 +121,17 @@ class LongControl:
       output_accel = self.last_output_accel
       if output_accel > self.CP.stopAccel:
         output_accel = min(output_accel, 0.0)
-        output_accel -= frogpilot_variables.stoppingDecelRate * DT_CTRL
+        output_accel -= frogpilot_toggles.stoppingDecelRate * DT_CTRL
       self.reset()
 
     elif self.long_control_state == LongCtrlState.starting:
-      output_accel = (a_target if frogpilot_variables.human_acceleration else self.CP.startAccel)
+      output_accel = (a_target if frogpilot_toggles.human_acceleration else self.CP.startAccel)
       self.reset()
 
     else:  # LongCtrlState.pid
       error = a_target - CS.aEgo
       output_accel = self.pid.update(error, speed=CS.vEgo,
-                                     feedforward=a_target)
+                                     feedforward=a_target, frogpilot_toggles=frogpilot_toggles)
 
     self.last_output_accel = clip(output_accel, accel_limits[0], accel_limits[1])
     return self.last_output_accel
@@ -135,7 +141,7 @@ class LongControl:
     self.pid.reset()
     self.v_pid = v_pid
 
-  def update_old_long(self, active, CS, long_plan, accel_limits, t_since_plan):
+  def update_old_long(self, active, CS, long_plan, accel_limits, t_since_plan, frogpilot_toggles):
     """Update longitudinal control. This updates the state machine and runs a PID loop"""
     # Interp control trajectory
     speeds = long_plan.speeds
@@ -189,7 +195,8 @@ class LongControl:
       error_deadzone = apply_deadzone(error, deadzone)
       output_accel = self.pid.update(error_deadzone, speed=CS.vEgo,
                                      feedforward=a_target,
-                                     freeze_integrator=freeze_integrator)
+                                     freeze_integrator=freeze_integrator,
+                                     frogpilot_toggles=frogpilot_toggles)
 
     self.last_output_accel = clip(output_accel, accel_limits[0], accel_limits[1])
 

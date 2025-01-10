@@ -113,8 +113,8 @@ FrogPilotVehiclesPanel::FrogPilotVehiclesPanel(FrogPilotSettingsWindow *parent) 
   forceFingerprint = new ParamControl("ForceFingerprint", tr("Disable Automatic Fingerprint Detection"), tr("Forces the selected fingerprint and prevents it from ever changing."), "");
   addItem(forceFingerprint);
 
-  bool disableOpenpilotLongState = params.getBool("DisableOpenpilotLongitudinal");
-  disableOpenpilotLong = new ToggleControl(tr("Disable openpilot Longitudinal Control"), tr("Disables openpilot longitudinal control and uses the car's stock ACC instead."), "", disableOpenpilotLongState);
+  disableOpenpilotLongitudinal = params.getBool("DisableOpenpilotLongitudinal");
+  disableOpenpilotLong = new ToggleControl(tr("Disable openpilot Longitudinal Control"), tr("Disables openpilot longitudinal control and uses the car's stock ACC instead."), "", disableOpenpilotLongitudinal);
   QObject::connect(disableOpenpilotLong, &ToggleControl::toggleFlipped, [this, parent](bool state) {
     if (state) {
       if (FrogPilotConfirmationDialog::yesorno(tr("Are you sure you want to completely disable openpilot longitudinal control?"), this)) {
@@ -144,13 +144,14 @@ FrogPilotVehiclesPanel::FrogPilotVehiclesPanel(FrogPilotSettingsWindow *parent) 
     {"NewLongAPIGM", tr("Use comma's New Longitudinal API"), tr("Enable comma's new control system that has shown great improvement with acceleration and braking, but has issues on some GM vehicles."), ""},
 
     {"NewLongAPI", tr("Use comma's New Longitudinal API"), tr("Enable comma's new control system that has shown great improvement with acceleration and braking, but has issues on some Hyundai/Kia/Genesis vehicles."), ""},
-
+    {"HyundaiRadarTracks", tr("Enable Radar Tracks"), tr("Enables the cars radar tracks along with OPLong for Hyundai/Kia/Genesis vehicles, which shows vast improvement in long control."), ""},
+    {"HKGtuning", tr("Chubbs' Custom Tuning"), tr("Chubbs' Custom tuning for Hyundai/Kia/Genesis vehicles, which smoothes acceleration and braking to help achieve a 'limo' stop."), ""},
     {"CrosstrekTorque", tr("Subaru Crosstrek Torque Increase"), tr("Increase the maximum allowed torque for the 'Subaru Crosstrek'."), ""},
 
     {"ToyotaDoors", tr("Automatically Lock/Unlock Doors"), tr("Automatically lock the doors when in drive and unlock when in park."), ""},
     {"ClusterOffset", tr("Cluster Speed Offset"), tr("Set the cluster offset openpilot uses to try and match the speed displayed on the dash."), ""},
     {"FrogsGoMoosTweak", tr("FrogsGoMoo's Personal Tweaks"), tr("FrogsGoMoo's personal tweaks to the Toyota/Lexus tune that allows the vehicle to take off and stop a bit smoother."), ""},
-    {"LockDoorsTimer", tr("Lock Doors On Ignition Off"), tr("Automatically lock the doors after the car's ignition has been turned off."), ""},
+    {"LockDoorsTimer", tr("Lock Doors On Ignition Off"), tr("Automatically lock the doors after the car's ignition has been turned off and no one is detected in either of the front seats."), ""},
     {"SNGHack", tr("Stop and Go Hack"), tr("Force stop and go for vehicles without stop and go functionality."), ""},
   };
 
@@ -184,7 +185,7 @@ FrogPilotVehiclesPanel::FrogPilotVehiclesPanel(FrogPilotSettingsWindow *parent) 
     toggles[param] = vehicleToggle;
   }
 
-  std::set<QString> rebootKeys = {"CrosstrekTorque", "ExperimentalGMTune", "NewLongAPI", "NewLongAPIGM"};
+  std::set<QString> rebootKeys = {"CrosstrekTorque", "ExperimentalGMTune", "FrogsGoMoosTweak", "HyundaiRadarTracks", "HKGtuning",  "NewLongAPI", "NewLongAPIGM"};
   for (const QString &key : rebootKeys) {
     QObject::connect(static_cast<ToggleControl*>(toggles[key]), &ToggleControl::toggleFlipped, [this]() {
       if (started) {
@@ -295,7 +296,7 @@ void FrogPilotVehiclesPanel::updateToggles() {
         setVisible &= !hasSNG;
       }
       if (key == "LockDoorsTimer") {
-        setVisible = allowAutoLockingDoors;
+        setVisible &= allowAutoLockingDoors;
       }
     }
 

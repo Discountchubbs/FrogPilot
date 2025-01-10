@@ -67,6 +67,7 @@ FrogPilotLongitudinalPanel::FrogPilotLongitudinalPanel(FrogPilotSettingsWindow *
     {"LeadDetectionThreshold", tr("Lead Detection Confidence"), tr("Controls how sensitive openpilot is to detecting vehicles ahead. A lower value can help detect vehicles sooner and from farther away, but increases the chance openpilot mistakes other objects for vehicles."), ""},
     {"MaxDesiredAcceleration", tr("Maximum Acceleration Rate"), tr("Sets a cap on how fast openpilot can accelerate."), ""},
     {"TacoTune", tr("'Taco Bell Run' Turn Speed Hack"), tr("Uses comma's speed hack they used to help handle left and right turns more precisely during their 2022 'Taco Bell' drive by reducing the maximum allowed speed and acceleration while turning."), ""},
+    {"Hattrick", tr("Wanna Go Fast Mode"), tr("Dubbed Hat Trick mode in reference to the EV6 owner who prioritizes speed at all costs!"), ""},
 
     {"QOLLongitudinal", tr("Quality of Life Improvements"), tr("Miscellaneous longitudinal focused features to improve your overall openpilot experience."), "../frogpilot/assets/toggle_icons/quality_of_life.png"},
     {"CustomCruise", tr("Cruise Increase"), tr("Controls the interval used when increasing the cruise control speed."), ""},
@@ -538,8 +539,6 @@ FrogPilotLongitudinalPanel::FrogPilotLongitudinalPanel(FrogPilotSettingsWindow *
   QObject::connect(parent, &FrogPilotSettingsWindow::closeParentToggle, this, &FrogPilotLongitudinalPanel::hideToggles);
   QObject::connect(parent, &FrogPilotSettingsWindow::closeSubParentToggle, this, &FrogPilotLongitudinalPanel::hideSubToggles);
   QObject::connect(parent, &FrogPilotSettingsWindow::updateMetric, this, &FrogPilotLongitudinalPanel::updateMetric);
-
-  updateMetric();
 }
 
 void FrogPilotLongitudinalPanel::showEvent(QShowEvent *event) {
@@ -555,13 +554,11 @@ void FrogPilotLongitudinalPanel::showEvent(QShowEvent *event) {
   hideToggles();
 }
 
-void FrogPilotLongitudinalPanel::updateMetric() {
-  bool previousIsMetric = isMetric;
-  isMetric = params.getBool("IsMetric");
-
-  if (isMetric != previousIsMetric) {
-    double distanceConversion = isMetric ? FOOT_TO_METER : METER_TO_FOOT;
-    double speedConversion = isMetric ? MILE_TO_KM : KM_TO_MILE;
+void FrogPilotLongitudinalPanel::updateMetric(bool metric, bool bootRun) {
+  static bool previousMetric;
+  if (metric != previousMetric && !bootRun) {
+    double distanceConversion = metric ? FOOT_TO_METER : METER_TO_FOOT;
+    double speedConversion = metric ? MILE_TO_KM : KM_TO_MILE;
 
     params.putFloatNonBlocking("IncreasedStoppedDistance", params.getFloat("IncreasedStoppedDistance") * distanceConversion);
 
@@ -576,6 +573,7 @@ void FrogPilotLongitudinalPanel::updateMetric() {
     params.putFloatNonBlocking("Offset4", params.getFloat("Offset4") * speedConversion);
     params.putFloatNonBlocking("SetSpeedOffset", params.getFloat("SetSpeedOffset") * speedConversion);
   }
+  previousMetric = metric;
 
   FrogPilotDualParamControl *ceSpeedToggle = reinterpret_cast<FrogPilotDualParamControl*>(toggles["CESpeed"]);
   FrogPilotParamValueButtonControl *ceSignal = static_cast<FrogPilotParamValueButtonControl*>(toggles["CESignalSpeed"]);
@@ -588,7 +586,7 @@ void FrogPilotLongitudinalPanel::updateMetric() {
   FrogPilotParamValueControl *increasedStoppedDistanceToggle = static_cast<FrogPilotParamValueControl*>(toggles["IncreasedStoppedDistance"]);
   FrogPilotParamValueControl *setSpeedOffsetToggle = static_cast<FrogPilotParamValueControl*>(toggles["SetSpeedOffset"]);
 
-  if (isMetric) {
+  if (metric) {
     offset1Toggle->setTitle(tr("Speed Limit Offset (0-34 kph)"));
     offset2Toggle->setTitle(tr("Speed Limit Offset (35-54 kph)"));
     offset3Toggle->setTitle(tr("Speed Limit Offset (55-64 kph)"));

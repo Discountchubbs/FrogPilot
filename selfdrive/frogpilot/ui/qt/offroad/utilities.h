@@ -9,8 +9,6 @@ public:
   explicit FrogPilotUtilitiesPanel(FrogPilotSettingsWindow *parent);
 
 private:
-  FrogPilotButtonsControl *forceStartedBtn;
-
   FrogPilotSettingsWindow *parent;
 
   Params params;

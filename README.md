@@ -13,23 +13,23 @@ What is openpilot?
   </tr>
 </table>
 
-What is FrogPilot? 🐸
+What is ChubbsPilot
 ------
 
-FrogPilot is a fully open-sourced fork of openpilot, featuring clear and concise commits striving to be a resource for the openpilot developer community. It thrives on contributions from both users and developers, focusing on a collaborative, community-led approach to deliver an advanced openpilot experience for everyone!
+ChubbsPilot is an open-sourced fork of openpilot, featuring clear commits striving to be a resource for the openpilot developer community. It thrives on contributions from both users and developers, focusing on a collaborative, community-led approach to deliver an advanced openpilot experience for everyone!
 
 ------
-FrogPilot was last updated on:
+ChubbsPilot was last updated on:
 
 **January 18th, 2025**
 
 Features
 ------
 
-FrogPilot offers a wide range of customizable features that are easily toggled on or off to suit your preferences. Whether you want a completely stock openpilot experience, or want to add some fun and personal touches, FrogPilot has you covered! Some of the features include:
+ChubbsPilot offers a wide range of customizable features that are easily toggled on or off to suit your preferences. Whether you want a completely stock openpilot experience, or want to add some fun and personal touches, ChubbsPilot has you covered! Some of the features include:
 
 ------
-⚡ **Advanced Customizations:**
+ **Advanced Customizations:**
 
   - "Alert Volume Controller" to set the volume level for each of of openpilot's sounds
   - Customize the following distance and jerk values for each personality profile
@@ -38,17 +38,15 @@ FrogPilot offers a wide range of customizable features that are easily toggled o
   - Increase the max set speed by a custom interval (i.e. 2, 3, 4, 5, 6, etc. instead of just 1)
   - Select between past, present, and future openpilot driving models
 ------
-🎨 **Custom Themes:**
+ **Custom Themes:**
 
   - 🐸 Frog theme (with a bonus 🐐 sound effect)
   - <img src="https://images.emojiterra.com/google/noto-emoji/unicode-15/color/512px/1f1f7-1f1fa.png" width="15" height="12"> Russia / Joseph Stalin theme
   - 🔌 Tesla theme
   - Holiday themes! Minor holidays last a day, while major holidays (Easter, Halloween, Thanksgiving, Christmas) last a week
   - Random events triggered by specific actions while driving with openpilot
-
-  - 📢 Want to add a theme? Request one in the "feature-request" channel in the FrogPilot Discord!
 ------
-🚀 **Conditional Experimental Mode:**
+ **Conditional Experimental Mode:**
 
   - Auto-activates "Experimental Mode" under several conditions, including:
     - Approaching intersections and turns while using navigation
@@ -57,18 +55,18 @@ FrogPilot offers a wide range of customizable features that are easily toggled o
     - Driving below a set speed
     - Turn signal activation below 55mph for turn assistance
 ------
-📊 **Developer UI:**
+ **Developer UI:**
 
   - Display various driving logics such as the distance, speed, and the desired following distance to your lead vehicle
   - Lane measuring of the adjacent lanes for lane detection
   - Tap the "VEHICLE ONLINE"/"CPU"/"GPU" gauge to toggle between CPU and GPU monitoring
   - Tap the "CONNECT ONLINE"/"MEMORY"/"LEFT"/"USED" gauge to toggle between RAM and storage monitoring
 ------
-🛠 **Device Management:**
+**Device Management:**
 
   - Adjustable screen brightness for both onroad and offroad states
   - Adjustable screen timeout times for both onroad and offroad states
-  - Backup and restore previous versions of FrogPilot
+  - Backup and restore previous versions of ChubbsPilot
   - Backup and restore previous versions of toggle configurations
   - Battery level threshold to automatically shut the device down after you car's battery falls below a set voltage limit when offroad
   - Delete stored driving data for increased privacy/space via the "Device" panel
@@ -79,9 +77,9 @@ FrogPilot offers a wide range of customizable features that are easily toggled o
   - "Standby Mode" that wakes the screen up between engagement states or when important alerts are triggered
   - Timer to automatically shut down after going offroad
 ------
-🚖 **Lateral Adjustments:**
+ **Lateral Adjustments:**
 
-  - Activate lateral control by simply pressing the "Cruise Control" button
+  - Activate lateral control by simply pressing the "Cruise Control" button, or LKAS button.
   - Force comma's auto tuning for unsupported vehicles
   - Lateral control won't disengage on gas or brake
   - Nudgeless lane changes with lane detection to prevent driving into curbs or going offroad
@@ -91,7 +89,7 @@ FrogPilot offers a wide range of customizable features that are easily toggled o
   - Precise turns by using turn desires when below the minimum lane change speed
   - [Twilsonco's NNFF](https://github.com/twilsonco/openpilot) for smoother steering control
 ------
-🚘 **Longitudinal Adjustments:**
+ **Longitudinal Adjustments:**
 
   - Aggressive acceleration when following a lead vehicle from a stop
   - "Map Turn Speed Controller" to slow down for curves based on stored map data
@@ -104,8 +102,9 @@ FrogPilot offers a wide range of customizable features that are easily toggled o
   - Tweak the lead detection threshold to detect leads sooner for smoother braking on stopped/slower vehicles
   - "Vision Turn Speed Controller" for smoother handling of curves
     - With additional toggles to fine tune the speed aggressiveness and curve detection sensitivity
+  - "Chubbs Tuning" HKG specific longitudinal tune, featuring over 500 lines of code to significantly improve     braking experience with ChubbsPilot.
 ------
-🗺️ **Navigation:**
+ **Navigation:**
 
   - 3D buildings
   - Custom map styles
@@ -115,9 +114,7 @@ FrogPilot offers a wide range of customizable features that are easily toggled o
   - Offline maps
   - "Open Street Maps" integration for speed limit control and road name view
 ------
-🎮 **Onroad UI:**
-
-  - Compass that rotates according to the direction you're driving
+ **Onroad UI:**
   - FPS counter in the screen's border
   - Hide various UI elements on the screen for a cleaner UI
   - Pedals on the onroad UI indicate when the gas/brake pedals are being used
@@ -138,7 +135,7 @@ FrogPilot offers a wide range of customizable features that are easily toggled o
     - 📢 Request your own steering wheel icon in the "feature-request" channel!
   - Steering wheel in the onroad UI rotates alongside your physical steering wheel
 ------
-🚙 **Vehicle Specific Additions:**
+ **Vehicle Specific Additions:**
 
   - Automatic/manual fingerprint selection to force a selected fingerprint
   - Custom longitudinal tunings for GM EVs and trucks for smoother gas and brake control
@@ -153,7 +150,7 @@ FrogPilot offers a wide range of customizable features that are easily toggled o
   - "Stop and Go" hack for Toyota's without stop and go functionality
   - ZSS support for the Toyota Prius and Sienna
 ------
-🚦 **Quality of Life Features:**
+ **Quality of Life Features:**
 
   - Automatic updates for a completely "set and forget" experience
   - Camera view selection
@@ -165,33 +162,16 @@ FrogPilot offers a wide range of customizable features that are easily toggled o
   - Retain tethering status between reboots
   - Screenrecorder
   - Toggle "Experimental Mode" via the "Lane Departure Alert" button, holding down the "Distance" button for 0.5+ seconds, or by double tapping the screen
+  - Toggle "Brake Signal" to turn the current speed value to red when the vehicles brake lights are on.
 
 How to Install
 ------
 
-Easiest way to install FrogPilot is via this URL at the installation screen:
+Easiest way to install ChubbsPilot is via this URL at the installation screen:
 
 ```
-frogpilot.download
+Installer.comma.ai/discountchubbs/FrogPilot
 ```
-
-DO NOT install the "FrogPilot-Development" branch. I'm constantly breaking things on there, so unless you don't want to use openpilot, NEVER install it!
-
-![](https://i.imgur.com/swr0kqJ.png)
-
-Bug reports / Feature Requests
-------
-
-If you encounter any issues or bugs while using FrogPilot, or if you have any suggestions for new features or improvements, please don't hesitate to post about it on the Discord! I'm always looking for ways to improve the fork and provide a better experience for everyone!
-
-To report a bug or request a new feature, make a post in the #bug-reports or #feature-requests channel respectively on the FrogPilot Discord. Please provide as much detail as possible about the issue you're experiencing or the feature you'd like to see added. Photos, videos, log files, or other relevant information are very helpful!
-
-I will do my best to respond to bug reports and feature requests in a timely manner, but please understand that I may not be able to address every request immediately. Your feedback and suggestions are valuable, and I appreciate your help in making FrogPilot the best it can be!
-
-Discord
-------
-
-[Join the FrogPilot Community Discord!](https://discord.gg/frogpilot)
 
 Credits
 ------
@@ -208,6 +188,7 @@ Credits
 * [Pfeiferj](https://github.com/pfeiferj)
 * [ServerDummy](https://github.com/ServerDummy)
 * [Twilsonco](https://github.com/twilsonco)
+* [FrogsGoMoo](https://github.com/frogai)
 
 Licensing
 ------

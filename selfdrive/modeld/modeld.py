@@ -25,7 +25,7 @@ from openpilot.selfdrive.modeld.fill_model_msg import fill_model_msg, fill_pose_
 from openpilot.selfdrive.modeld.constants import ModelConstants
 from openpilot.selfdrive.modeld.models.commonmodel_pyx import ModelFrame, CLContext
 
-from openpilot.selfdrive.frogpilot.frogpilot_variables import DEFAULT_MODEL, MODELS_PATH, get_frogpilot_toggles
+from openpilot.selfdrive.frogpilot.frogpilot_variables import METADATAS_PATH, MODELS_PATH, get_frogpilot_toggles
 
 PROCESS_NAME = "selfdrive.modeld.modeld"
 SEND_RAW_PRED = os.getenv('SEND_RAW_PRED')
@@ -33,9 +33,6 @@ SEND_RAW_PRED = os.getenv('SEND_RAW_PRED')
 MODEL_PATHS = {
   ModelRunner.THNEED: Path(__file__).parent / 'models/supercombo.thneed',
   ModelRunner.ONNX: Path(__file__).parent / 'models/supercombo.onnx'}
-
-METADATA_PATH = Path(__file__).parent / 'models/supercombo_metadata.pkl'
-
 
 class FrameMeta:
   frame_id: int = 0
@@ -54,16 +51,15 @@ class ModelState:
   prev_desire: np.ndarray  # for tracking the rising edge of the pulse
   model: ModelRunner
 
-  def __init__(self, context: CLContext, model: str, model_version: str, use_desired_curvature: bool):
+  def __init__(self, context: CLContext, model: str, model_version: str):
     # FrogPilot variables
-    model_path = MODELS_PATH / f'{model}.thneed'
-    if model != DEFAULT_MODEL and model_path.exists():
-      MODEL_PATHS[ModelRunner.THNEED] = model_path
+    MODEL_PATHS[ModelRunner.THNEED] = MODELS_PATH / f'{model}.thneed'
 
-    metadata_path = METADATA_PATH
-    desired_metadata_path = MODELS_PATH / f'supercombo_metadata_{model_version}.pkl'
-    if model != DEFAULT_MODEL and desired_metadata_path.exists():
-      metadata_path = desired_metadata_path
+    with open(METADATAS_PATH / f'supercombo_metadata_{model_version}.pkl', 'rb') as f:
+      model_metadata = pickle.load(f)
+
+    input_shapes = model_metadata.get('input_shapes')
+    self.use_desired_curvature = 'lateral_control_params' in input_shapes and 'prev_desired_curv' in input_shapes
 
     self.frame = ModelFrame(context)
     self.wide_frame = ModelFrame(context)
@@ -76,15 +72,10 @@ class ModelState:
     self.inputs = {
       'desire': np.zeros(ModelConstants.DESIRE_LEN * (ModelConstants.HISTORY_BUFFER_LEN+1), dtype=np.float32),
       'traffic_convention': np.zeros(ModelConstants.TRAFFIC_CONVENTION_LEN, dtype=np.float32),
+      **({'lateral_control_params': np.zeros(ModelConstants.LATERAL_CONTROL_PARAMS_LEN, dtype=np.float32)} if self.use_desired_curvature else {}),
+      **({'prev_desired_curv': np.zeros(ModelConstants.PREV_DESIRED_CURV_LEN * (ModelConstants.HISTORY_BUFFER_LEN+1), dtype=np.float32)} if self.use_desired_curvature else {}),
       'features_buffer': np.zeros(ModelConstants.HISTORY_BUFFER_LEN * ModelConstants.FEATURE_LEN, dtype=np.float32),
     }
-
-    if use_desired_curvature:
-      self.inputs['lateral_control_params'] = np.zeros(ModelConstants.LATERAL_CONTROL_PARAMS_LEN, dtype=np.float32)
-      self.inputs['prev_desired_curv'] = np.zeros(ModelConstants.PREV_DESIRED_CURV_LEN * (ModelConstants.HISTORY_BUFFER_LEN+1), dtype=np.float32)
-
-    with open(metadata_path, 'rb') as f:
-      model_metadata = pickle.load(f)
 
     self.output_slices = model_metadata['output_slices']
     net_output_size = model_metadata['output_shapes']['outputs'][1]
@@ -104,7 +95,7 @@ class ModelState:
     return parsed_model_outputs
 
   def run(self, buf: VisionBuf, wbuf: VisionBuf, transform: np.ndarray, transform_wide: np.ndarray,
-                inputs: dict[str, np.ndarray], prepare_only: bool, use_desired_curvature: bool) -> dict[str, np.ndarray] | None:
+                inputs: dict[str, np.ndarray], prepare_only: bool) -> dict[str, np.ndarray] | None:
     # Model decides when action is completed, so desire input is just a pulse triggered on rising edge
     inputs['desire'][0] = 0
     new_desire = np.where(inputs['desire'] - self.prev_desire > .99, inputs['desire'], 0)
@@ -115,7 +106,7 @@ class ModelState:
     self.inputs['desire'][:] = self.desire_20Hz.reshape((25,4,-1)).max(axis=1).flatten()
 
     self.inputs['traffic_convention'][:] = inputs['traffic_convention']
-    if use_desired_curvature:
+    if self.use_desired_curvature:
       self.inputs['lateral_control_params'][:] = inputs['lateral_control_params']
 
     self.model.setInputBuffer("input_imgs", self.frame.prepare(buf, transform.flatten(), self.model.getCLBuffer("input_imgs")))
@@ -125,18 +116,18 @@ class ModelState:
       return None
 
     self.model.execute()
-    outputs = self.parser.parse_outputs(self.slice_outputs(self.output), use_desired_curvature)
+    outputs = self.parser.parse_outputs(self.slice_outputs(self.output))
 
     self.full_features_20Hz[:-1] = self.full_features_20Hz[1:]
     self.full_features_20Hz[-1] = outputs['hidden_state'][0, :]
 
-    if use_desired_curvature:
+    if self.use_desired_curvature:
       self.prev_desired_curv_20hz[:-1] = self.prev_desired_curv_20hz[1:]
       self.prev_desired_curv_20hz[-1] = outputs['desired_curvature'][0, :]
 
     idxs = np.arange(-4,-100,-4)[::-1]
     self.inputs['features_buffer'][:] = self.full_features_20Hz[idxs].flatten()
-    if use_desired_curvature:
+    if self.use_desired_curvature:
       # TODO model only uses last value now, once that changes we need to input strided action history buffer
       self.inputs['prev_desired_curv'][-ModelConstants.PREV_DESIRED_CURV_LEN:] = 0. * self.prev_desired_curv_20hz[-4, :]
     return outputs
@@ -157,13 +148,12 @@ def main(demo=False):
   # FrogPilot variables
   frogpilot_toggles = get_frogpilot_toggles()
 
-  model = frogpilot_toggles.model
+  model_name = frogpilot_toggles.model
   model_version = frogpilot_toggles.model_version
 
-  clip_curves = frogpilot_toggles.clipped_curvature_model
-  use_desired_curvature = frogpilot_toggles.desired_curvature_model
+  planner_curves = frogpilot_toggles.planner_curvature_model
 
-  model = ModelState(cl_context, model, model_version, use_desired_curvature)
+  model = ModelState(cl_context, model_name, model_version)
   cloudlog.warning("models loaded, modeld starting")
 
   # visionipc clients
@@ -260,7 +250,7 @@ def main(demo=False):
     is_rhd = sm["driverMonitoringState"].isRHD
     frame_id = sm["roadCameraState"].frameId
     v_ego = max(sm["carState"].vEgo, 0.)
-    if use_desired_curvature:
+    if model.use_desired_curvature:
       lateral_control_params = np.array([v_ego, steer_delay], dtype=np.float32)
     if sm.updated["liveCalibration"] and sm.seen['roadCameraState'] and sm.seen['deviceState']:
       device_from_calib_euler = np.array(sm["liveCalibration"].rpyCalib, dtype=np.float32)
@@ -292,13 +282,11 @@ def main(demo=False):
     inputs:dict[str, np.ndarray] = {
       'desire': vec_desire,
       'traffic_convention': traffic_convention,
+      **({'lateral_control_params': lateral_control_params} if model.use_desired_curvature else {}),
       }
 
-    if use_desired_curvature:
-      inputs['lateral_control_params'] = lateral_control_params
-
     mt1 = time.perf_counter()
-    model_output = model.run(buf_main, buf_extra, model_transform_main, model_transform_extra, inputs, prepare_only, use_desired_curvature)
+    model_output = model.run(buf_main, buf_extra, model_transform_main, model_transform_extra, inputs, prepare_only)
     mt2 = time.perf_counter()
     model_execution_time = mt2 - mt1
 
@@ -309,7 +297,7 @@ def main(demo=False):
       fill_model_msg(drivingdata_send, modelv2_send, model_output, v_ego, steer_delay,
                      publish_state, meta_main.frame_id, meta_extra.frame_id, frame_id,
                      frame_drop_ratio, meta_main.timestamp_eof, model_execution_time, live_calib_seen,
-                     clip_curves)
+                     planner_curves)
 
       desire_state = modelv2_send.modelV2.meta.desireState
       l_lane_change_prob = desire_state[log.Desire.laneChangeLeft]

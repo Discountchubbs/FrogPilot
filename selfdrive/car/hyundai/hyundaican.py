@@ -38,7 +38,9 @@ def create_lkas11(packer, frame, CP, apply_steer, steer_req,
                            CAR.HYUNDAI_ELANTRA_HEV_2021, CAR.HYUNDAI_SONATA_HYBRID, CAR.HYUNDAI_KONA_EV, CAR.HYUNDAI_KONA_HEV, CAR.HYUNDAI_KONA_EV_2022,
                            CAR.HYUNDAI_SANTA_FE_2022, CAR.KIA_K5_2021, CAR.HYUNDAI_IONIQ_HEV_2022, CAR.HYUNDAI_SANTA_FE_HEV_2022,
                            CAR.HYUNDAI_SANTA_FE_PHEV_2022, CAR.KIA_STINGER_2022, CAR.KIA_K5_HEV_2020, CAR.KIA_CEED,
-                           CAR.HYUNDAI_AZERA_6TH_GEN, CAR.HYUNDAI_AZERA_HEV_6TH_GEN, CAR.HYUNDAI_CUSTIN_1ST_GEN):
+                           CAR.HYUNDAI_AZERA_6TH_GEN, CAR.HYUNDAI_AZERA_HEV_6TH_GEN, CAR.HYUNDAI_CUSTIN_1ST_GEN,
+                           CAR.HYUNDAI_ELANTRA_2022_NON_SCC, CAR.GENESIS_G70_2021_NON_SCC, CAR.KIA_SELTOS_2023_NON_SCC,
+                           CAR.HYUNDAI_BAYON_1ST_GEN_NON_SCC, CAR.KIA_CEED_PHEV_2022_NON_SCC):
     values["CF_Lkas_LdwsActivemode"] = int(left_lane) + (int(right_lane) << 1)
     values["CF_Lkas_LdwsOpt_USM"] = 2
 
@@ -126,19 +128,24 @@ def create_lfahda_mfc(packer, enabled, lat_active, hda_set_speed=0):
   }
   return packer.make_can_msg("LFAHDA_MFC", 0, values)
 
-def create_acc_commands(packer, enabled, accel, upper_jerk, idx, hud_control, set_speed, stopping, long_override, use_fca, cruise_available):
-  commands = []
+def create_acc_commands(packer, enabled, accel, upper_jerk, idx, hud_control, set_speed,
+                        stopping, long_override, use_fca, CS, CP, cruise_available):
 
+  d = hud_control.leadDistance
+  objGap = 0 if d == 0 else 2 if d < 15 else 3 if d < 21 else 4 if d < 26 else 5
+  objGap2 = 0 if objGap == 0 else 2 if hud_control.leadRelSpeed < -0.2 else 1
+
+  commands = []
   scc11_values = {
     "MainMode_ACC": 1 if cruise_available else 0,
     "TauGapSet": hud_control.leadDistanceBars,
     "VSetDis": set_speed if enabled else 0,
     "AliveCounterACC": idx % 0x10,
-    "ObjValid": 1, # close lead makes controls tighter
-    "ACC_ObjStatus": 1, # close lead makes controls tighter
+    "ObjValid":  1 if hud_control.leadVisible else 0, # close lead makes controls tighter
+    "ACC_ObjStatus":  1 if hud_control.leadVisible else 0, # close lead makes controls tighter
     "ACC_ObjLatPos": 0,
-    "ACC_ObjRelSpd": 0,
-    "ACC_ObjDist": 1, # close lead makes controls tighter
+    "ACC_ObjRelSpd": hud_control.leadRelSpeed,
+    "ACC_ObjDist": int(hud_control.leadDistance), # close lead makes controls tighter
     }
   commands.append(packer.make_can_msg("SCC11", 0, scc11_values))
 
@@ -167,7 +174,8 @@ def create_acc_commands(packer, enabled, accel, upper_jerk, idx, hud_control, se
     "JerkUpperLimit": upper_jerk, # stock usually is 1.0 but sometimes uses higher values
     "JerkLowerLimit": 5.0, # stock usually is 0.5 but sometimes uses higher values
     "ACCMode": 2 if enabled and long_override else 1 if enabled else 4, # stock will always be 4 instead of 0 after first disengage
-    "ObjGap": 2 if hud_control.leadVisible else 0, # 5: >30, m, 4: 25-30 m, 3: 20-25 m, 2: < 20 m, 0: no lead
+    "ObjGap": objGap, # 5: >30, m, 4: 25-30 m, 3: 20-25 m, 2: < 20 m, 0: no lead
+    "ObjDistStat": objGap2,
   }
   commands.append(packer.make_can_msg("SCC14", 0, scc14_values))
 
@@ -175,19 +183,25 @@ def create_acc_commands(packer, enabled, accel, upper_jerk, idx, hud_control, se
   if use_fca:
     # note that some vehicles most likely have an alternate checksum/counter definition
     # https://github.com/commaai/opendbc/commit/9ddcdb22c4929baf310295e832668e6e7fcfa602
-    fca11_values = {
-      "CR_FCA_Alive": idx % 0xF,
-      "PAINT1_Status": 1,
-      "FCA_DrvSetStatus": 1,
-      "FCA_Status": 1,  # AEB disabled
-    }
+    if CP.flags & HyundaiFlags.CAMERA_SCC:
+      fca11_values = CS.fca11
+      fca11_values["PAINT1_Status"] = 1
+      fca11_values["FCA_DrvSetStatus"] = 1
+      fca11_values["FCA_Status"] = 1  # AEB disabled, until a route with AEB or FCW trigger is verified
+    else:
+      fca11_values = {
+        "CR_FCA_Alive": idx % 0xF,
+        "PAINT1_Status": 1,
+        "FCA_DrvSetStatus": 1,
+        "FCA_Status": 1,  # AEB disabled
+      }
     fca11_dat = packer.make_can_msg("FCA11", 0, fca11_values)[2]
     fca11_values["CR_FCA_ChkSum"] = hyundai_checksum(fca11_dat[:7])
     commands.append(packer.make_can_msg("FCA11", 0, fca11_values))
 
   return commands
 
-def create_acc_opt(packer):
+def create_acc_opt(packer, CS, CP):
   commands = []
 
   scc13_values = {
@@ -198,10 +212,15 @@ def create_acc_opt(packer):
   commands.append(packer.make_can_msg("SCC13", 0, scc13_values))
 
   # TODO: this needs to be detected and conditionally sent on unsupported long cars
-  fca12_values = {
-    "FCA_DrvSetState": 2,
-    "FCA_USM": 1, # AEB disabled
-  }
+  if CP.flags & HyundaiFlags.CAMERA_SCC:
+    fca12_values = CS.fca12
+    fca12_values["FCA_DrvSetState"] = 2
+    fca12_values["FCA_USM"] = 1 # AEB disabled
+  else:
+    fca12_values = {
+      "FCA_DrvSetState": 2,
+      "FCA_USM": 1, # AEB disabled
+    }
   commands.append(packer.make_can_msg("FCA12", 0, fca12_values))
 
   return commands

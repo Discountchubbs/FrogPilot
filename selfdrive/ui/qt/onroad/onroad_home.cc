@@ -214,12 +214,9 @@ void OnroadWindow::paintEvent(QPaintEvent *event) {
     static float smoothedSteer = 0.0;
 
     smoothedSteer = 0.1 * std::abs(steer) + 0.9 * smoothedSteer;
-
     if (std::abs(smoothedSteer - steer) < 0.01) {
       smoothedSteer = steer;
     }
-
-    int visibleHeight = rect.height() * smoothedSteer;
 
     QLinearGradient gradient(rect.topLeft(), rect.bottomLeft());
     gradient.setColorAt(0.0, bg_colors[STATUS_TRAFFIC_MODE_ACTIVE]);
@@ -227,18 +224,18 @@ void OnroadWindow::paintEvent(QPaintEvent *event) {
     gradient.setColorAt(0.5, bg_colors[STATUS_CONDITIONAL_OVERRIDDEN]);
     gradient.setColorAt(0.85, bg_colors[STATUS_ENGAGED]);
     gradient.setColorAt(1.0, bg_colors[STATUS_ENGAGED]);
-
     QBrush brush(gradient);
-    int fillWidth = UI_BORDER_SIZE;
 
     if (steeringAngleDeg != 0) {
+      int visibleHeight = rect.height() * smoothedSteer;
       QRect rectToFill, rectToHide;
+
       if (steeringAngleDeg < 0) {
-        rectToFill = QRect(rect.x(), rect.y() + rect.height() - visibleHeight, fillWidth, visibleHeight);
-        rectToHide = QRect(rect.x(), rect.y(), fillWidth, rect.height() - visibleHeight);
+        rectToFill = QRect(rect.x(), rect.y() + rect.height() - visibleHeight, UI_BORDER_SIZE, visibleHeight);
+        rectToHide = QRect(rect.x(), rect.y(), UI_BORDER_SIZE, rect.height() - visibleHeight);
       } else {
-        rectToFill = QRect(rect.x() + rect.width() - fillWidth, rect.y() + rect.height() - visibleHeight, fillWidth, visibleHeight);
-        rectToHide = QRect(rect.x() + rect.width() - fillWidth, rect.y(), fillWidth, rect.height() - visibleHeight);
+        rectToFill = QRect(rect.x() + rect.width() - UI_BORDER_SIZE, rect.y() + rect.height() - visibleHeight, UI_BORDER_SIZE, visibleHeight);
+        rectToHide = QRect(rect.x() + rect.width() - UI_BORDER_SIZE, rect.y(), UI_BORDER_SIZE, rect.height() - visibleHeight);
       }
       p.fillRect(rectToFill, brush);
       p.fillRect(rectToHide, bgColor);

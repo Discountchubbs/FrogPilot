@@ -54,7 +54,9 @@ void AnnotatedCameraWidget::updateState(int alert_height, const UIState &s) {
   const auto cs = sm["controlsState"].getControlsState();
   const auto car_state = sm["carState"].getCarState();
   const auto nav_instruction = sm["navInstruction"].getNavInstruction();
-
+  brakeSignal = s.scene.brake_signal;
+  standstill = s.scene.standstill;
+  brakeLightOn = s.scene.brake_lights_on;
   // Handle older routes where vCruiseCluster is not set
   float v_cruise = cs.getVCruiseCluster() == 0.0 ? cs.getVCruise() : cs.getVCruiseCluster();
   setSpeed = cs_alive ? v_cruise : SET_SPEED_NA;
@@ -76,6 +78,9 @@ void AnnotatedCameraWidget::updateState(int alert_height, const UIState &s) {
     speedLimit = nav_alive ? nav_instruction.getSpeedLimit() : 0.0;
   }
   speedLimit *= (s.scene.is_metric ? MS_TO_KPH : MS_TO_MPH);
+  if (s.scene.speed_limit_controller && !showSLCOffset && !slcOverridden && speedLimit != 0) {
+    speedLimit += slcSpeedLimitOffset;
+  }
 
   has_us_speed_limit = (nav_alive && speed_limit_sign == cereal::NavInstruction::SpeedLimitSign::MUTCD) || !useViennaSLCSign && !hideSpeedLimit;
   has_eu_speed_limit = (nav_alive && speed_limit_sign == cereal::NavInstruction::SpeedLimitSign::VIENNA) || useViennaSLCSign && !hideSpeedLimit;
@@ -400,8 +405,16 @@ void AnnotatedCameraWidget::drawHud(QPainter &p) {
       p.setFont(InterFont(66));
       drawText(p, rect().center().x(), 290, QString("%1 seconds").arg(seconds));
     } else {
+      //check if brake signal is active
+      bool isBraking = (brakeSignal && (brakeLightOn || standstill));
       p.setFont(InterFont(176, QFont::Bold));
-      drawText(p, rect().center().x(), 210, speedStr);
+      if (isBraking) {
+        p.setPen(QColor(255, 0, 0, 255)); // Red
+      } else {
+        p.setPen(QColor(255, 255, 255, 255)); // White
+      };
+
+      drawText(p, rect().center().x(), 210, speedStr, 255, true);
       p.setFont(InterFont(66));
       drawText(p, rect().center().x(), 290, speedUnit, 200);
     }
@@ -757,7 +770,7 @@ void AnnotatedCameraWidget::drawLead(QPainter &painter, const cereal::RadarState
               .arg(qRound(lead_speed * speedConversionMetrics))
               .arg(leadSpeedUnit);
     } else {
-      text = QString("%1 %2 (%3) | %4 %5 | %6 %7")
+      text = QString("%1 %2 (%3) | %4 %5 | %6%7")
               .arg(qRound(d_rel * distanceConversion))
               .arg(leadDistanceUnit)
               .arg(QString("Desired: %1").arg(desiredFollow * distanceConversion))
@@ -1206,10 +1219,6 @@ void PedalIcons::updateState(const UIScene &scene) {
 
   accelerating = acceleration > 0.25f;
   decelerating = acceleration < -0.25f;
-
-  if (accelerating || decelerating) {
-    update();
-  }
 }
 
 void PedalIcons::paintEvent(QPaintEvent *event) {

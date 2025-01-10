@@ -10,7 +10,7 @@ class LatControlPID(LatControl):
     super().__init__(CP, CI)
     self.pid = PIDController((CP.lateralTuning.pid.kpBP, CP.lateralTuning.pid.kpV),
                              (CP.lateralTuning.pid.kiBP, CP.lateralTuning.pid.kiV),
-                             k_f=CP.lateralTuning.pid.kf, pos_limit=self.steer_max, neg_limit=-self.steer_max)
+                             k_f=CP.lateralTuning.pid.kf, pos_limit=self.steer_max, neg_limit=-self.steer_max, lateral_pid=True)
     self.get_steer_feedforward = CI.get_steer_feedforward_function()
 
   def reset(self):
@@ -37,7 +37,7 @@ class LatControlPID(LatControl):
       steer_feedforward = self.get_steer_feedforward(angle_steers_des_no_offset, CS.vEgo)
 
       output_steer = self.pid.update(error, override=CS.steeringPressed,
-                                     feedforward=steer_feedforward, speed=CS.vEgo)
+                                     feedforward=steer_feedforward, speed=CS.vEgo, frogpilot_toggles=frogpilot_toggles)
       pid_log.active = True
       pid_log.p = self.pid.p
       pid_log.i = self.pid.i

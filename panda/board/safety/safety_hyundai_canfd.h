@@ -51,6 +51,8 @@ const CanMsg HYUNDAI_CANFD_HDA1_TX_MSGS[] = {
   {0x1A0, 0, 32}, // CRUISE_INFO
   {0x1CF, 2, 8},  // CRUISE_BUTTON
   {0x1E0, 0, 16}, // LFAHDA_CLUSTER
+  {0x161, 0, 32}, // MSG_161
+  {0x162, 0, 32}, // MSG_162
 };
 
 
@@ -172,14 +174,21 @@ static void hyundai_canfd_rx_hook(const CANPacket_t *to_push) {
     if (addr == button_addr) {
       bool main_button = false;
       int cruise_button = 0;
+      bool lkas_button = false;
       if (addr == 0x1cf) {
         cruise_button = GET_BYTE(to_push, 2) & 0x7U;
         main_button = GET_BIT(to_push, 19U);
+        lkas_button = GET_BIT(to_push, 23U);
       } else {
         cruise_button = (GET_BYTE(to_push, 4) >> 4) & 0x7U;
         main_button = GET_BIT(to_push, 34U);
+        lkas_button = GET_BIT(to_push, 39U);
       }
       hyundai_common_cruise_buttons_check(cruise_button, main_button);
+
+      if (alternative_experience & ALT_EXP_ALWAYS_ON_LATERAL) {
+	        hyundai_lkas_button_check(lkas_button);
+	    }
     }
 
     // gas press, different for EV, hybrid, and ICE models
@@ -248,7 +257,7 @@ static bool hyundai_canfd_tx_hook(const CANPacket_t *to_send) {
     bool is_cancel = (button == HYUNDAI_BTN_CANCEL);
     bool is_resume = (button == HYUNDAI_BTN_RESUME);
 
-    bool allowed = (is_cancel && cruise_engaged_prev) || (is_resume && controls_allowed);
+    bool allowed = (is_cancel && cruise_engaged_prev) || (is_resume && (controls_allowed || aol_allowed));
     if (!allowed) {
       tx = false;
     }
@@ -304,7 +313,9 @@ static int hyundai_canfd_fwd_hook(int bus_num, int addr) {
     // CRUISE_INFO for non-HDA2, we send our own longitudinal commands
     bool is_scc_msg = ((addr == 0x1a0) && hyundai_longitudinal && !hyundai_canfd_hda2);
 
-    bool block_msg = is_lkas_msg || is_lfa_msg || is_lfahda_msg || is_scc_msg;
+    bool is_ccnc_msg = (addr == 0x161) || (addr == 0x162);
+
+    bool block_msg = is_lkas_msg || is_lfa_msg || is_lfahda_msg || is_scc_msg || is_ccnc_msg;
     if (!block_msg) {
       bus_fwd = 0;
     }

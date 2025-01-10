@@ -87,6 +87,17 @@ RxCheck hyundai_legacy_rx_checks[] = {
   HYUNDAI_SCC12_ADDR_CHECK(0)
 };
 
+RxCheck hyundai_non_scc_addr_checks[] = {
+  {.msg = {{0x260, 0, 8, .check_checksum = true, .max_counter = 3U, .frequency = 100U},
+           {0x371, 0, 8, .frequency = 100U}, { 0 }}},
+  {.msg = {{0x367, 0, 8, .frequency = 100U},
+           {0x595, 0, 8, .frequency = 10U}, { 0 }}},
+  {.msg = {{0x386, 0, 8, .check_checksum = true, .max_counter = 15U, .frequency = 100U}, { 0 }, { 0 }}},
+};
+
+
+const int HYUNDAI_PARAM_NON_SCC = 1024;
+bool hyundai_non_scc = false;
 bool hyundai_legacy = false;
 
 
@@ -180,6 +191,13 @@ static void hyundai_rx_hook(const CANPacket_t *to_push) {
       update_sample(&torque_driver, torque_driver_new);
     }
 
+    bool lkas_button = false;
+    if (addr == 0x391) {
+      lkas_button = GET_BIT(to_push, 4U);
+      if (alternative_experience & ALT_EXP_ALWAYS_ON_LATERAL) {
+        hyundai_lkas_button_check(lkas_button);
+      }
+    }
     // ACC steering wheel buttons
     if (addr == 0x4F1) {
       int cruise_button = GET_BYTE(to_push, 0) & 0x7U;
@@ -187,6 +205,23 @@ static void hyundai_rx_hook(const CANPacket_t *to_push) {
       hyundai_common_cruise_buttons_check(cruise_button, main_button);
     }
 
+    if (hyundai_non_scc) {
+      bool cruise_engaged = (hyundai_ev_gas_signal || hyundai_hybrid_gas_signal) ? GET_BIT(to_push, 51U) : GET_BYTE(to_push, 0) != 0U;
+      if (((addr == 0x595) && (hyundai_ev_gas_signal || hyundai_hybrid_gas_signal)) ||
+          ((addr == 0x367) && !hyundai_ev_gas_signal && !hyundai_hybrid_gas_signal)) {
+        hyundai_common_cruise_state_check(cruise_engaged);
+      } else {
+      }
+
+      acc_main_on = (hyundai_ev_gas_signal || hyundai_hybrid_gas_signal) ? GET_BIT(to_push, 50U) : GET_BIT(to_push, 25U);
+      if (((addr == 0x595) && (hyundai_ev_gas_signal || hyundai_hybrid_gas_signal)) ||
+          ((addr == 0x260) && !hyundai_ev_gas_signal && !hyundai_hybrid_gas_signal)) {
+        if (acc_main_on && (alternative_experience & ALT_EXP_ALWAYS_ON_LATERAL)) {
+          aol_allowed = true;
+          controls_allowed = false;
+        }
+      }
+    }
     // gas press, different for EV, hybrid, and ICE models
     if ((addr == 0x371) && hyundai_ev_gas_signal) {
       gas_pressed = (((GET_BYTE(to_push, 4) & 0x7FU) << 1) | GET_BYTE(to_push, 3) >> 7) != 0U;
@@ -311,6 +346,7 @@ static int hyundai_fwd_hook(int bus_num, int addr) {
 static safety_config hyundai_init(uint16_t param) {
   hyundai_common_init(param);
   hyundai_legacy = false;
+  hyundai_non_scc = GET_FLAG(param, HYUNDAI_PARAM_NON_SCC);
 
   if (hyundai_camera_scc) {
     hyundai_longitudinal = false;
@@ -321,6 +357,8 @@ static safety_config hyundai_init(uint16_t param) {
     ret = BUILD_SAFETY_CFG(hyundai_long_rx_checks, HYUNDAI_LONG_TX_MSGS);
   } else if (hyundai_camera_scc) {
     ret = BUILD_SAFETY_CFG(hyundai_cam_scc_rx_checks, HYUNDAI_CAMERA_SCC_TX_MSGS);
+  } else if (hyundai_non_scc) {
+    ret = BUILD_SAFETY_CFG(hyundai_non_scc_addr_checks, HYUNDAI_TX_MSGS);
   } else {
     ret = BUILD_SAFETY_CFG(hyundai_rx_checks, HYUNDAI_TX_MSGS);
   }
@@ -332,6 +370,7 @@ static safety_config hyundai_legacy_init(uint16_t param) {
   hyundai_legacy = true;
   hyundai_longitudinal = false;
   hyundai_camera_scc = false;
+  hyundai_non_scc = GET_FLAG(param, HYUNDAI_PARAM_NON_SCC);
   return BUILD_SAFETY_CFG(hyundai_legacy_rx_checks, HYUNDAI_TX_MSGS);
 }
 

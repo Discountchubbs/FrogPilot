@@ -12,71 +12,37 @@ public:
 signals:
   void openMapSelection();
 
+protected:
+  void showEvent(QShowEvent *event) override;
+
 private:
   void cancelDownload();
-  void displayMapButtons(bool visible = true);
-  void downloadMaps();
-  void finalizeDownload();
-  void handleDownloadError();
-  void hideEvent(QHideEvent *event) override;
-  void resetDownloadLabels();
-  void resetDownloadState();
-  void showEvent(QShowEvent *event);
-  void updateDownloadLabels(int downloadedFiles, int totalFiles, qint64 remainingTime, qint64 elapsedMilliseconds);
-  void updateDownloadStatusLabels();
+  void startDownload();
+  void updateDownloadLabels(std::string &osmDownloadProgress);
   void updateState(const UIState &s);
+
+  bool cancellingDownload;
+  bool hasMapsSelected;
 
   ButtonControl *downloadMapsButton;
   ButtonControl *removeMapsButton;
 
-  ButtonParamControl *preferredSchedule;
-
-  FrogPilotButtonsControl *selectMapsButton;
-
   FrogPilotSettingsWindow *parent;
 
-  LabelControl *africaLabel;
-  LabelControl *antarcticaLabel;
-  LabelControl *asiaLabel;
   LabelControl *downloadETA;
   LabelControl *downloadStatus;
   LabelControl *downloadTimeElapsed;
-  LabelControl *europeLabel;
   LabelControl *lastMapsDownload;
   LabelControl *mapsSize;
-  LabelControl *midwestLabel;
-  LabelControl *northAmericaLabel;
-  LabelControl *northeastLabel;
-  LabelControl *oceaniaLabel;
-  LabelControl *southAmericaLabel;
-  LabelControl *southLabel;
-  LabelControl *territoriesLabel;
-  LabelControl *westLabel;
-
-  MapSelectionControl *africaMaps;
-  MapSelectionControl *antarcticaMaps;
-  MapSelectionControl *asiaMaps;
-  MapSelectionControl *europeMaps;
-  MapSelectionControl *midwestMaps;
-  MapSelectionControl *northAmericaMaps;
-  MapSelectionControl *northeastMaps;
-  MapSelectionControl *oceaniaMaps;
-  MapSelectionControl *southAmericaMaps;
-  MapSelectionControl *southMaps;
-  MapSelectionControl *territoriesMaps;
-  MapSelectionControl *westMaps;
 
   Params params;
   Params params_memory{"/dev/shm/params"};
 
-  QString mapsFolderPath = "/data/media/0/osm/offline";
+  QDateTime startTime;
 
-  bool countriesOpen;
-  bool downloadActive;
-  bool hasMapsSelected;
-  bool mapdExists;
+  QElapsedTimer elapsedTime;
 
-  qint64 startTime;
+  QString mapsFolderPath;
 
-  std::string mapsSelected;
+  QStackedLayout *mapsLayout;
 };

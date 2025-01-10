@@ -266,8 +266,6 @@ FrogPilotLateralPanel::FrogPilotLateralPanel(FrogPilotSettingsWindow *parent) : 
   QObject::connect(parent, &FrogPilotSettingsWindow::closeParentToggle, this, &FrogPilotLateralPanel::hideToggles);
   QObject::connect(parent, &FrogPilotSettingsWindow::updateMetric, this, &FrogPilotLateralPanel::updateMetric);
   QObject::connect(uiState(), &UIState::uiUpdate, this, &FrogPilotLateralPanel::updateState);
-
-  updateMetric();
 }
 
 void FrogPilotLateralPanel::showEvent(QShowEvent *event) {
@@ -300,13 +298,11 @@ void FrogPilotLateralPanel::updateState(const UIState &s) {
   started = s.scene.started;
 }
 
-void FrogPilotLateralPanel::updateMetric() {
-  bool previousIsMetric = isMetric;
-  isMetric = params.getBool("IsMetric");
-
-  if (isMetric != previousIsMetric) {
-    double distanceConversion = isMetric ? FOOT_TO_METER : METER_TO_FOOT;
-    double speedConversion = isMetric ? MILE_TO_KM : KM_TO_MILE;
+void FrogPilotLateralPanel::updateMetric(bool metric, bool bootRun) {
+  static bool previousMetric;
+  if (metric != previousMetric && !bootRun) {
+    double distanceConversion = metric ? FOOT_TO_METER : METER_TO_FOOT;
+    double speedConversion = metric ? MILE_TO_KM : KM_TO_MILE;
 
     params.putFloatNonBlocking("LaneDetectionWidth", params.getFloat("LaneDetectionWidth") * distanceConversion);
 
@@ -315,13 +311,14 @@ void FrogPilotLateralPanel::updateMetric() {
     params.putFloatNonBlocking("PauseLateralOnSignal", params.getFloat("PauseLateralOnSignal") * speedConversion);
     params.putFloatNonBlocking("PauseLateralSpeed", params.getFloat("PauseLateralSpeed") * speedConversion);
   }
+  previousMetric = metric;
 
   FrogPilotParamValueControl *laneWidthToggle = static_cast<FrogPilotParamValueControl*>(toggles["LaneDetectionWidth"]);
   FrogPilotParamValueControl *minimumLaneChangeSpeedToggle = static_cast<FrogPilotParamValueControl*>(toggles["MinimumLaneChangeSpeed"]);
   FrogPilotParamValueControl *pauseAOLOnBrakeToggle = static_cast<FrogPilotParamValueControl*>(toggles["PauseAOLOnBrake"]);
   FrogPilotParamValueControl *pauseLateralToggle = static_cast<FrogPilotParamValueControl*>(toggles["PauseLateralSpeed"]);
 
-  if (isMetric) {
+  if (metric) {
     minimumLaneChangeSpeedToggle->updateControl(0, 150, tr("kph"));
     pauseAOLOnBrakeToggle->updateControl(0, 99, tr("kph"));
     pauseLateralToggle->updateControl(0, 99, tr("kph"));

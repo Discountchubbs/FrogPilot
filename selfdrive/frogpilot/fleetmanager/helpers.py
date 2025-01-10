@@ -26,23 +26,21 @@ import math
 import os
 import requests
 import subprocess
-import time
-# otisserv conversion
-from common.params import Params, ParamKeyType
-from flask import render_template, request, session
-from functools import wraps
-from pathlib import Path
 
+import openpilot.system.sentry as sentry
+
+from pathlib import Path
+from typing import List
+from urllib.parse import quote
+
+from openpilot.common.params import ParamKeyType
+from openpilot.selfdrive.car.toyota.carcontroller import LOCK_CMD, UNLOCK_CMD
 from openpilot.system.hardware import PC
 from openpilot.system.hardware.hw import Paths
 from openpilot.system.loggerd.uploader import listdir_by_creation
-from tools.lib.route import SegmentName
-from typing import List
 from openpilot.system.loggerd.xattr_cache import getxattr
-
-# otisserv conversion
-from urllib.parse import parse_qs, quote
-import openpilot.system.sentry as sentry
+from panda import Panda
+from tools.lib.route import SegmentName
 
 from openpilot.selfdrive.frogpilot.frogpilot_variables import params, update_frogpilot_toggles
 
@@ -52,8 +50,6 @@ pi = 3.1415926535897932384626
 x_pi = 3.14159265358979324 * 3000.0 / 180.0
 a = 6378245.0
 ee = 0.00669342162296594323
-
-params_storage = Params("/persist/params")
 
 PRESERVE_ATTR_NAME = 'user.preserve'
 PRESERVE_ATTR_VALUE = b'1'
@@ -230,22 +226,25 @@ def get_nav_active():
   else:
     return False
 
-def get_public_token():
-  token = params.get("MapboxPublicKey", encoding='utf8')
-  return token.strip() if token is not None else None
-
-def get_app_token():
-  token = params.get("MapboxSecretKey", encoding='utf8')
-  return token.strip() if token is not None else None
+def get_amap_key():
+    token1 = params.get("AMapKey1", encoding='utf8')
+    token2 = params.get("AMapKey2", encoding='utf8')
+    return (
+        token1.strip() if token1 and token1 != "0" else None,
+        token2.strip() if token2 and token2 != "0" else None
+    )
 
 def get_gmap_key():
-  token = params.get("GMapKey", encoding='utf8')
-  return token.strip() if token is not None else None
+    token = params.get("GMapKey", encoding='utf8')
+    return token.strip() if token and token != "0" else None
 
-def get_amap_key():
-  token = params.get("AMapKey1", encoding='utf8')
-  token2 = params.get("AMapKey2", encoding='utf8')
-  return (token.strip() if token is not None else None, token2.strip() if token2 is not None else None)
+def get_public_token():
+    token = params.get("MapboxPublicKey", encoding='utf8')
+    return token.strip() if token and token.startswith("pk") else None
+
+def get_app_token():
+    token = params.get("MapboxSecretKey", encoding='utf8')
+    return token.strip() if token and token.startswith("sk") else None
 
 def get_SearchInput():
   SearchInput = params.get_int("SearchInput")
@@ -322,6 +321,8 @@ def set_destination(postvars, valid_addr):
   else:
     addr = postvars.get("place_name")
     token = get_public_token()
+    lat = float(postvars.get("lat"))
+    lon = float(postvars.get("lon"))
     data, lon, lat, valid_addr, token = search_addr(addr, lon, lat, valid_addr, token)
     postvars["lat"] = lat
     postvars["lon"] = lon
@@ -454,43 +455,50 @@ def decode_parameters(encoded_string):
   return json.loads(decrypted_data)
 
 def get_all_toggle_values():
-  toggle_values = {}
+  excluded_keys = [
+    "ApiCache_NavDestinations", "CalibrationParams", "CarParamsPersistent",
+    "CarParamsPrevRoute", "GitDiff", "LastGPSPosition", "LiveParameters",
+    "LiveTorqueParameters", "NavDestination", "NavPastDestinations"
+  ]
 
+  toggle_values = {}
   for key in params.all_keys():
-    key = key.decode('utf-8') if isinstance(key, bytes) else key
-    if params.get_key_type(key) & ParamKeyType.FROGPILOT_STORAGE:
-      try:
-        value = params.get(key)
-        value = value.decode('utf-8') if isinstance(value, bytes) else value
-        if isinstance(value, str) and value.replace('.', '', 1).isdigit():
-          value = float(value) if '.' in value else int(value)
-      except Exception:
-        value = "0"
-      toggle_values[key] = value if value is not None else "0"
+    if key.decode('utf-8') in excluded_keys:
+      continue
+    if params.get_key_type(key) & ParamKeyType.PERSISTENT:
+      if isinstance(params.get(key), bytes):
+        value = params.get(key, encoding='utf-8')
+      else:
+        value = params.get(key) or "0"
+      toggle_values[key.decode('utf-8')] = value
 
   return encode_parameters(toggle_values)
 
 def store_toggle_values(request_data):
-  current_parameters = {
-    key.decode('utf-8') if isinstance(key, bytes) else key: None
-    for key in params.all_keys() if params.get_key_type(key) & ParamKeyType.FROGPILOT_STORAGE
-  }
-  decoded_values = decode_parameters(request_data['data'])
+  excluded_keys = [
+    "ApiCache_NavDestinations", "CalibrationParams", "CarParamsPersistent",
+    "CarParamsPrevRoute", "GitDiff", "LastGPSPosition", "LiveParameters",
+    "LiveTorqueParameters", "NavDestination", "NavPastDestinations"
+  ]
 
-  for key in current_parameters:
-    print(f"Processing key: {key}")
-    value = decoded_values.get(key, "0")
-    try:
-      if isinstance(value, (int, float)):
-        value = str(value)
-      print(f"value: {value}")
-      params.put(key, value)
-      params_storage.put(key, value)
-    except Exception as error:
-      print(f"Failed to update {key}: {error}")
-
-  extra_keys = set(decoded_values.keys()) - set(current_parameters.keys())
-  if extra_keys:
-    print(f"Warning: Ignoring extra keys: {extra_keys}")
+  toggle_values = decode_parameters(request_data['data'])
+  for key, value in toggle_values.items():
+    if key in excluded_keys:
+      continue
+    params.put(key, value)
 
   update_frogpilot_toggles()
+
+def lock_doors():
+  panda = Panda()
+  panda.set_safety_mode(panda.SAFETY_ALLOUTPUT)
+  panda.can_send(0x750, LOCK_CMD, 0)
+  panda.set_safety_mode(panda.SAFETY_TOYOTA)
+  panda.send_heartbeat()
+
+def unlock_doors():
+  panda = Panda()
+  panda.set_safety_mode(panda.SAFETY_ALLOUTPUT)
+  panda.can_send(0x750, UNLOCK_CMD, 0)
+  panda.set_safety_mode(panda.SAFETY_TOYOTA)
+  panda.send_heartbeat()
