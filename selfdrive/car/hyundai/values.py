@@ -276,6 +276,11 @@ class CAR(Platforms):
     HYUNDAI_SANTA_FE.specs,
     flags=HyundaiFlags.CHECKSUM_CRC8 | HyundaiFlags.HYBRID,
   )
+  HYUNDAI_SONATA_2019 = HyundaiPlatformConfig(
+    [HyundaiCarDocs("Hyundai Sonata 2019", car_parts=CarParts.common([CarHarness.hyundai_e]))],
+    CarSpecs(mass=1536, wheelbase=2.804, steerRatio=15.26),
+    flags=HyundaiFlags.TCU_GEARS,
+  )
   HYUNDAI_SONATA = HyundaiPlatformConfig(
     [HyundaiCarDocs("Hyundai Sonata 2020-23", "All", video_link="https://www.youtube.com/watch?v=ix63r9kE3Fw",
                    car_parts=CarParts.common([CarHarness.hyundai_a]))],

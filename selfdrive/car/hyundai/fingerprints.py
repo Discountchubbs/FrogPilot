@@ -183,6 +183,17 @@ FW_VERSIONS = {
       b'\xf1\x00AEH MFC  AT USA LHD 1.00 1.00 95740-G2700 201027',
     ],
   },
+  CAR.HYUNDAI_SONATA_2019: {
+    (Ecu.fwdRadar, 0x7d0, None): [
+      b'\xf1\x00LF__ SCC F-CUP      1.00 1.00 96401-C2200         ',
+    ],
+    (Ecu.abs, 0x7d1, None): [
+      b'\xf1\x00LF ESC \t 11 \x17\x01\x13 58920-C2610',
+    ],
+    (Ecu.fwdCamera, 0x7c4, None): [
+      b'\xf1\x00LFF LKAS AT USA LHD 1.01 1.02 95740-C1000 E52',
+    ],
+  },
   CAR.HYUNDAI_SONATA: {
     (Ecu.fwdRadar, 0x7d0, None): [
       b'\xf1\x00DN8_ SCC F-CU-      1.00 1.00 99110-L0000         ',
