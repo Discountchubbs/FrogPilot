@@ -1,8 +1,5 @@
 #!/usr/bin/env python3
 import datetime
-import json
-import subprocess
-import threading
 import time
 
 import openpilot.system.sentry as sentry
@@ -22,99 +19,12 @@ from openpilot.selfdrive.frogpilot.assets.theme_manager import ThemeManager
 from openpilot.selfdrive.frogpilot.controls.frogpilot_planner import FrogPilotPlanner
 from openpilot.selfdrive.frogpilot.controls.lib.frogpilot_tracking import FrogPilotTracking
 from openpilot.selfdrive.frogpilot.frogpilot_functions import backup_toggles
-from openpilot.selfdrive.frogpilot.frogpilot_utilities import is_url_pingable
+from openpilot.selfdrive.frogpilot.frogpilot_utilities import flash_panda, is_url_pingable, lock_doors, run_thread_with_lock, update_maps, update_openpilot
 from openpilot.selfdrive.frogpilot.frogpilot_variables import FrogPilotVariables, get_frogpilot_toggles, params, params_memory
-from openpilot.selfdrive.frogpilot.navigation.mapd import MAPD_PATH, MAPS_PATH, ensure_mapd_is_running, update_mapd
-
-locks = {
-  "backup_toggles": threading.Lock(),
-  "download_all_models": threading.Lock(),
-  "download_model": threading.Lock(),
-  "download_theme": threading.Lock(),
-  "ensure_mapd_is_running": threading.Lock(),
-  "lock_doors": threading.Lock(),
-  "update_checks": threading.Lock(),
-  "update_mapd": threading.Lock(),
-  "update_maps": threading.Lock(),
-  "update_models": threading.Lock(),
-  "update_openpilot": threading.Lock(),
-  "update_themes": threading.Lock()
-}
-
-running_threads = {}
-
-def run_thread_with_lock(name, target, args=()):
-  if not running_threads.get(name, threading.Thread()).is_alive():
-    with locks[name]:
-      thread = threading.Thread(target=target, args=args, daemon=True)
-      thread.start()
-      running_threads[name] = thread
-
-def lock_doors(lock_doors_timer):
-  time.sleep(lock_doors_timer)
-
-  panda = Panda()
-  panda.set_safety_mode(Panda.SAFETY_ALLOUTPUT)
-  panda.can_send(0x750, LOCK_CMD, 0)
-  panda.set_safety_mode(Panda.SAFETY_TOYOTA)
-  panda.send_heartbeat()
-
-def update_maps(now):
-  while not MAPD_PATH.exists():
-    time.sleep(60)
-
-  maps_selected = json.loads(params.get("MapsSelected", encoding='utf8') or "{}")
-  if not (maps_selected.get("nations") or maps_selected.get("states")):
-    return
-
-  day = now.day
-  is_first = day == 1
-  is_Sunday = now.weekday() == 6
-  schedule = params.get_int("PreferredSchedule")
-
-  maps_downloaded = MAPS_PATH.exists()
-  if maps_downloaded and (schedule == 0 or (schedule == 1 and not is_Sunday) or (schedule == 2 and not is_first)):
-    return
-
-  suffix = "th" if 4 <= day <= 20 or 24 <= day <= 30 else ["st", "nd", "rd"][day % 10 - 1]
-  todays_date = now.strftime(f"%B {day}{suffix}, %Y")
-
-  if maps_downloaded and params.get("LastMapsUpdate", encoding='utf-8') == todays_date:
-    return
-
-  if params.get("OSMDownloadProgress", encoding='utf-8') is None:
-    params_memory.put("OSMDownloadLocations", json.dumps(maps_selected))
-
-  while params.get("OSMDownloadProgress", encoding='utf-8') is not None:
-    time.sleep(60)
-
-  params.put("LastMapsUpdate", todays_date)
-
-def update_openpilot(manually_updated, frogpilot_toggles):
-  if not frogpilot_toggles.automatic_updates or manually_updated:
-    return
-
-  subprocess.run(["pkill", "-SIGUSR1", "-f", "system.updated.updated"], check=False)
-  time.sleep(60)
-
-  if not params.get_bool("UpdaterFetchAvailable"):
-    return
-
-  while params.get("UpdaterState", encoding="utf8") != "idle":
-    time.sleep(60)
-
-  subprocess.run(["pkill", "-SIGHUP", "-f", "system.updated.updated"], check=False)
-  while not params.get_bool("UpdateAvailable"):
-    time.sleep(60)
-
-  while params.get_bool("IsOnroad"):
-    time.sleep(300)
-
-  HARDWARE.reboot()
 
 def assets_checks(model_manager, theme_manager):
-  if MAPD_PATH.exists():
-    run_thread_with_lock("ensure_mapd_is_running", ensure_mapd_is_running)
+  if params_memory.get_bool("FlashPanda"):
+    run_thread_with_lock("flash_panda", flash_panda)
 
   if params_memory.get_bool("DownloadAllModels"):
     run_thread_with_lock("download_all_models", model_manager.download_all_models)
@@ -141,7 +51,6 @@ def update_checks(manually_updated, model_manager, now, theme_manager, frogpilot
   while not (is_url_pingable("https://github.com") or is_url_pingable("https://gitlab.com")):
     time.sleep(60)
 
-  run_thread_with_lock("update_mapd", update_mapd)
   run_thread_with_lock("update_maps", update_maps, (now,))
   run_thread_with_lock("update_models", model_manager.update_models, (boot_run,))
   run_thread_with_lock("update_openpilot", update_openpilot, (manually_updated, frogpilot_toggles,))
@@ -176,7 +85,8 @@ def frogpilot_thread():
   toggles_last_updated = datetime.datetime.now()
 
   pm = messaging.PubMaster(['frogpilotPlan'])
-  sm = messaging.SubMaster(['carControl', 'carState', 'controlsState', 'deviceState', 'modelV2', 'radarState',
+  sm = messaging.SubMaster(['carControl', 'carState', 'controlsState', 'deviceState', 'driverMonitoringState',
+                            'managerState', 'modelV2', 'pandaStates', 'radarState',
                             'frogpilotCarControl', 'frogpilotCarState', 'frogpilotNavigation'],
                             poll='modelV2', ignore_avg_freq=['radarState'])
 
@@ -209,7 +119,7 @@ def frogpilot_thread():
       frogpilot_toggles = get_frogpilot_toggles()
 
       if frogpilot_toggles.lock_doors_timer != 0:
-        run_thread_with_lock("lock_doors", lock_doors, (frogpilot_toggles.lock_doors_timer,))
+        run_thread_with_lock("lock_doors", lock_doors, (frogpilot_toggles.lock_doors_timer, sm))
     elif started and not started_previously:
       radarless_model = frogpilot_toggles.radarless_model
 
@@ -240,7 +150,7 @@ def frogpilot_thread():
     manually_updated = params_memory.get_bool("ManualUpdateInitiated")
 
     run_update_checks |= manually_updated
-    run_update_checks |= now.second == 0 and (now.minute % 60 == 0 or frogpilot_toggles.frogs_go_moo)
+    run_update_checks |= now.second == 0 and (now.minute % 60 == 0 or now.minute % 5 == 0 and frogpilot_toggles.frogs_go_moo)
     run_update_checks &= time_validated
 
     if run_update_checks:

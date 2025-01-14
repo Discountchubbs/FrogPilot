@@ -480,7 +480,7 @@ def main() -> None:
         # check for update
         params.put("UpdaterState", "checking...")
         updater.check_for_update()
-        params_memory.put_bool("ManualUpdateInitiated", False)
+        params_memory.remove("ManualUpdateInitiated")
 
         # download update
         last_fetch = read_time_from_param(params, "UpdaterLastFetchTime")

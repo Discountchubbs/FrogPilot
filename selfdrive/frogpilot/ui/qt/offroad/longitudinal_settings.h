@@ -19,23 +19,13 @@ private:
   void hideToggles();
   void showEvent(QShowEvent *event) override;
   void showToggles(const std::set<QString> &keys);
-  void updateMetric();
-
-  FrogPilotSettingsWindow *parent;
-
-  FrogPilotButtonsControl *curveDetectionBtn;
-
-  QJsonObject frogpilotToggleLevels;
-
-  Params params;
-  Params params_default{"/data/params_default"};
+  void updateMetric(bool metric, bool bootRun);
 
   bool customPersonalityOpen;
-  bool hasPCMCruise;
   bool hasDashSpeedLimits;
+  bool hasPCMCruise;
   bool isGM;
   bool isHKGCanFd;
-  bool isMetric = params.getBool("IsMetric");
   bool isSubaru;
   bool isToyota;
   bool slcOpen;
@@ -58,4 +48,13 @@ private:
   std::set<QString> speedLimitControllerVisualKeys = {"ShowSLCOffset", "SpeedLimitSources"};
   std::set<QString> standardPersonalityKeys = {"StandardFollow", "StandardJerkAcceleration", "StandardJerkDeceleration", "StandardJerkDanger", "StandardJerkSpeed", "StandardJerkSpeedDecrease", "ResetStandardPersonality"};
   std::set<QString> trafficPersonalityKeys = {"TrafficFollow", "TrafficJerkAcceleration", "TrafficJerkDeceleration", "TrafficJerkDanger", "TrafficJerkSpeed", "TrafficJerkSpeedDecrease", "ResetTrafficPersonality"};
+
+  FrogPilotButtonsControl *curveDetectionBtn;
+
+  FrogPilotSettingsWindow *parent;
+
+  QJsonObject frogpilotToggleLevels;
+
+  Params params;
+  Params params_default{"/data/params_default"};
 };

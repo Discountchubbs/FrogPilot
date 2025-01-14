@@ -280,39 +280,35 @@ class ThemeManager:
         print(f"Unsupported repository URL: {repo_url}")
         return assets
 
-      try:
-        print(f"Fetching assets from branch '{branch}': {api_url}")
-        response = requests.get(api_url, timeout=10)
-        response.raise_for_status()
-        content = response.json()
+      print(f"Fetching assets from branch '{branch}': {api_url}")
+      response = requests.get(api_url, timeout=10)
+      response.raise_for_status()
+      content = response.json()
 
-        if "github" in repo_url:
-          content = content.get('tree', [])
+      if "github" in repo_url:
+        content = content.get('tree', [])
 
-        for item in content:
-          if item["type"] != "blob":
-            continue
+      for item in content:
+        if item["type"] != "blob":
+          continue
 
-          if branch == "Steering-Wheels":
-            assets["wheels"].append(item["path"])
-          elif branch == "Themes":
-            theme_name = item["path"].split('/')[0]
-            assets["themes"].setdefault(theme_name, set())
+        if branch == "Steering-Wheels":
+          assets["wheels"].append(item["path"])
+        elif branch == "Themes":
+          theme_name = item["path"].split('/')[0]
+          assets["themes"].setdefault(theme_name, set())
 
-            item_path = item["path"].lower()
-            if "colors" in item_path:
-              assets["themes"][theme_name].add("colors")
-            elif "distance_icons" in item_path:
-              assets["themes"][theme_name].add("distance_icons")
-            elif "icons" in item_path:
-              assets["themes"][theme_name].add("icons")
-            elif "signals" in item_path:
-              assets["themes"][theme_name].add("signals")
-            elif "sounds" in item_path:
-              assets["themes"][theme_name].add("sounds")
-
-      except requests.exceptions.RequestException as error:
-        print(f"Error occurred when fetching from branch '{branch}': {error}")
+          item_path = item["path"].lower()
+          if "colors" in item_path:
+            assets["themes"][theme_name].add("colors")
+          elif "distance_icons" in item_path:
+            assets["themes"][theme_name].add("distance_icons")
+          elif "icons" in item_path:
+            assets["themes"][theme_name].add("icons")
+          elif "signals" in item_path:
+            assets["themes"][theme_name].add("signals")
+          elif "sounds" in item_path:
+            assets["themes"][theme_name].add("sounds")
 
     return {**assets, "themes": {k: list(v) for k, v in assets["themes"].items()}}
 

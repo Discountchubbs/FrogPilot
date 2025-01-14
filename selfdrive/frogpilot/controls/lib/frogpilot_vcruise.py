@@ -93,6 +93,8 @@ class FrogPilotVCruise:
         self.slc.speed_limit_changed = self.slc_target != desired_slc_target and not speed_limit_denied
       elif self.slc_target == 0:
         self.slc_target = desired_slc_target
+      else:
+        self.speed_limit_timer = 0
 
       if frogpilot_toggles.speed_limit_controller:
         self.override_slc = self.overridden_speed > self.slc_target + self.slc_offset

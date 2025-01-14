@@ -1,5 +1,3 @@
-#include "selfdrive/ui/qt/widgets/scrollview.h"
-
 #include "selfdrive/frogpilot/navigation/ui/maps_settings.h"
 #include "selfdrive/frogpilot/navigation/ui/primeless_settings.h"
 #include "selfdrive/frogpilot/ui/qt/offroad/data_settings.h"
@@ -114,13 +112,17 @@ void FrogPilotSettingsWindow::createPanelButtons(FrogPilotListWidget *list) {
 FrogPilotSettingsWindow::FrogPilotSettingsWindow(SettingsWindow *parent) : QFrame(parent) {
   mainLayout = new QStackedLayout(this);
 
-  frogpilotWidget = new QWidget(this);
+  QWidget *frogpilotWidget = new QWidget(this);
   QVBoxLayout *frogpilotLayout = new QVBoxLayout(frogpilotWidget);
   frogpilotLayout->setContentsMargins(50, 25, 50, 25);
+  frogpilotWidget->setLayout(frogpilotLayout);
+
+  frogpilotPanel = new ScrollView(frogpilotWidget, this);
+  mainLayout->addWidget(frogpilotPanel);
+  frogpilotPanel->setWidget(frogpilotWidget);
 
   FrogPilotListWidget *list = new FrogPilotListWidget(this);
   frogpilotLayout->addWidget(list);
-  mainLayout->addWidget(frogpilotWidget);
 
   std::vector<QString> togglePresets{tr("Minimal"), tr("Standard"), tr("Advanced"), tr("Developer")};
   ButtonParamControl *togglePreset = new ButtonParamControl("TuningLevel", tr("Tuning Level"),
@@ -167,10 +169,11 @@ FrogPilotSettingsWindow::FrogPilotSettingsWindow(SettingsWindow *parent) : QFram
   QObject::connect(uiState(), &UIState::offroadTransition, this, &FrogPilotSettingsWindow::updateVariables);
   QObject::connect(uiState(), &UIState::uiUpdate, this, &FrogPilotSettingsWindow::updateState);
 
-  frogpilotToggleLevels = QJsonDocument::fromJson(QString::fromStdString(params_memory.get("FrogPilotTuningLevels", true)).toUtf8()).object();
+  frogpilotToggleLevels = QJsonDocument::fromJson(params_memory.get("FrogPilotTuningLevels", true).c_str()).object();
   tuningLevel = params.getInt("TuningLevel");
 
   closeParentToggle();
+  updateMetric(params.getBool("IsMetric"), true);
   updateVariables();
 }
 
@@ -179,7 +182,7 @@ void FrogPilotSettingsWindow::hideEvent(QHideEvent *event) {
 }
 
 void FrogPilotSettingsWindow::closePanel() {
-  mainLayout->setCurrentWidget(frogpilotWidget);
+  mainLayout->setCurrentWidget(frogpilotPanel);
   panelOpen = false;
   updateFrogPilotToggles();
 }
@@ -188,7 +191,7 @@ void FrogPilotSettingsWindow::updateState() {
   UIState *s = uiState();
   UIScene &scene = s->scene;
 
-  scene.keep_screen_on = panelOpen && keepScreenOn;
+  scene.frogpilot_panel_active = panelOpen && keepScreenOn;
 }
 
 void FrogPilotSettingsWindow::updateVariables() {

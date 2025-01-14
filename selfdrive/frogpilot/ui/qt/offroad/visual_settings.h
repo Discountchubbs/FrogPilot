@@ -19,24 +19,13 @@ private:
   void hideToggles();
   void showEvent(QShowEvent *event) override;
   void showToggles(const std::set<QString> &keys);
-  void updateMetric();
-
-  FrogPilotButtonToggleControl *borderMetricsBtn;
-  FrogPilotButtonToggleControl *lateralMetricsBtn;
-  FrogPilotButtonToggleControl *longitudinalMetricsBtn;
-
-  FrogPilotSettingsWindow *parent;
-
-  Params params;
-
-  QJsonObject frogpilotToggleLevels;
+  void updateMetric(bool metric, bool bootRun);
 
   bool developerUIOpen;
   bool hasAutoTune;
   bool hasBSM;
   bool hasOpenpilotLongitudinal;
   bool hasRadar;
-  bool isMetric = params.getBool("IsMetric");
 
   int tuningLevel;
 
@@ -50,4 +39,14 @@ private:
   std::set<QString> developerWidgetKeys = {"ShowCEMStatus", "ShowStoppingPoint"};
   std::set<QString> modelUIKeys = {"DynamicPathWidth", "LaneLinesWidth", "PathEdgeWidth", "PathWidth", "RoadEdgesWidth", "UnlimitedLength"};
   std::set<QString> navigationUIKeys = {"BigMap", "MapStyle", "RoadNameUI", "ShowSpeedLimits", "UseVienna"};
+
+  FrogPilotButtonToggleControl *borderMetricsBtn;
+  FrogPilotButtonToggleControl *lateralMetricsBtn;
+  FrogPilotButtonToggleControl *longitudinalMetricsBtn;
+
+  FrogPilotSettingsWindow *parent;
+
+  Params params;
+
+  QJsonObject frogpilotToggleLevels;
 };

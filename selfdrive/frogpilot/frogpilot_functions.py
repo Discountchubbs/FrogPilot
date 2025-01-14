@@ -11,6 +11,8 @@ import tarfile
 import threading
 import time
 
+import openpilot.system.sentry as sentry
+
 from openpilot.common.basedir import BASEDIR
 from openpilot.common.params_pyx import ParamKeyType
 from openpilot.common.time import system_time_valid
@@ -175,17 +177,19 @@ def frogpilot_boot_functions(build_metadata, params_storage):
   FrogPilotVariables().update(holiday_theme="stock", started=False)
   ThemeManager().update_active_theme(time_validated=system_time_valid(), frogpilot_toggles=get_frogpilot_toggles(), boot_run=True)
 
-  def backup_thread():
+  def logging_and_backup_runner():
     while not system_time_valid():
       print("Waiting for system time to become valid...")
       time.sleep(1)
+
+    sentry.capture_user(build_metadata.channel)
 
     subprocess.run(["pkill", "-SIGUSR1", "-f", "system.updated.updated"], check=False)
 
     backup_frogpilot(build_metadata)
     backup_toggles(params_storage)
 
-  threading.Thread(target=backup_thread, daemon=True).start()
+  threading.Thread(target=logging_and_backup_runner, daemon=True).start()
 
 def setup_frogpilot(build_metadata):
   run_cmd(["sudo", "mount", "-o", "remount,rw", "/persist"], "Successfully remounted /persist as read-write", "Failed to remount /persist")

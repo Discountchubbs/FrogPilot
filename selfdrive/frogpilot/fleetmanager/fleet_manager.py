@@ -336,6 +336,22 @@ def store_toggle_values_route():
   except Exception as error:
     return jsonify({"error": "Failed to update values", "details": str(error)}), 400
 
+@app.route("/lock_doors", methods=['POST'])
+def lock_doors_route():
+  try:
+    fleet.lock_doors()
+    return jsonify({"message": "Doors locked successfully!"}), 200
+  except Exception as error:
+    return jsonify({"error": "Failed to lock doors...", "details": str(error)}), 400
+
+@app.route("/unlock_doors", methods=['POST'])
+def unlock_doors_route():
+  try:
+    fleet.unlock_doors()
+    return jsonify({"message": "Doors unlocked successfully!"}), 200
+  except Exception as error:
+    return jsonify({"error": "Failed to unlock doors...", "details": str(error)}), 400
+
 def main():
   try:
     set_core_affinity([0, 1, 2, 3])

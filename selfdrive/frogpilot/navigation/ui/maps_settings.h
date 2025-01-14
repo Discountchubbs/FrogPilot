@@ -26,6 +26,15 @@ private:
   void updateDownloadStatusLabels();
   void updateState(const UIState &s);
 
+  bool countriesOpen;
+  bool downloadActive;
+  bool hasMapsSelected;
+  bool mapdExists;
+
+  qint64 startTime;
+
+  std::string mapsSelected;
+
   ButtonControl *downloadMapsButton;
   ButtonControl *removeMapsButton;
 
@@ -70,13 +79,4 @@ private:
   Params params_memory{"/dev/shm/params"};
 
   QString mapsFolderPath = "/data/media/0/osm/offline";
-
-  bool countriesOpen;
-  bool downloadActive;
-  bool hasMapsSelected;
-  bool mapdExists;
-
-  qint64 startTime;
-
-  std::string mapsSelected;
 };

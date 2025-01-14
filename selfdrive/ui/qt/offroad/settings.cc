@@ -118,8 +118,8 @@ TogglesPanel::TogglesPanel(SettingsWindow *parent) : ListWidget(parent) {
   });
 
   // FrogPilot signals
-  connect(toggles["IsMetric"], &ToggleControl::toggleFlipped, [=]() {
-    updateMetric();
+  connect(toggles["IsMetric"], &ToggleControl::toggleFlipped, [=](bool metric) {
+    updateMetric(metric);
   });
 }
 

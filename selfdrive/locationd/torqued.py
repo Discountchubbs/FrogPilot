@@ -231,6 +231,9 @@ def main(demo=False):
   # FrogPilot variables
   frogpilot_toggles = get_frogpilot_toggles()
 
+  if not frogpilot_toggles.liveValid:
+    estimator = TorqueEstimator(CP, True)
+
   while True:
     sm.update()
     if sm.all_checks():

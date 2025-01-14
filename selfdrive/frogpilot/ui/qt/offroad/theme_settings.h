@@ -21,6 +21,28 @@ private:
   void showToggles(const std::set<QString> &keys);
   void updateState(const UIState &s);
 
+  bool cancellingDownload;
+  bool colorDownloading;
+  bool colorsDownloaded;
+  bool distanceIconDownloading;
+  bool distanceIconsDownloaded;
+  bool finalizingDownload;
+  bool iconDownloading;
+  bool iconsDownloaded;
+  bool signalDownloading;
+  bool signalsDownloaded;
+  bool soundDownloading;
+  bool soundsDownloaded;
+  bool themeDownloading;
+  bool wheelDownloading;
+  bool wheelsDownloaded;
+
+  int tuningLevel;
+
+  std::map<QString, AbstractControl*> toggles;
+
+  std::set<QString> customThemeKeys = {"CustomColors", "CustomDistanceIcons", "CustomIcons", "CustomSignals", "CustomSounds", "DownloadStatusLabel", "WheelIcon"};
+
   FrogPilotButtonsControl *manageCustomColorsBtn;
   FrogPilotButtonsControl *manageCustomIconsBtn;
   FrogPilotButtonsControl *manageCustomSignalsBtn;
@@ -46,26 +68,4 @@ private:
 
   Params params;
   Params params_memory{"/dev/shm/params"};
-
-  bool cancellingDownload;
-  bool colorDownloading;
-  bool colorsDownloaded;
-  bool distanceIconDownloading;
-  bool distanceIconsDownloaded;
-  bool finalizingDownload;
-  bool iconDownloading;
-  bool iconsDownloaded;
-  bool signalDownloading;
-  bool signalsDownloaded;
-  bool soundDownloading;
-  bool soundsDownloaded;
-  bool themeDownloading;
-  bool wheelDownloading;
-  bool wheelsDownloaded;
-
-  int tuningLevel;
-
-  std::map<QString, AbstractControl*> toggles;
-
-  std::set<QString> customThemeKeys = {"CustomColors", "CustomDistanceIcons", "CustomIcons", "CustomSignals", "CustomSounds", "DownloadStatusLabel", "WheelIcon"};
 };

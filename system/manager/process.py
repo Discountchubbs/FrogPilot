@@ -88,7 +88,7 @@ class ManagerProcess(ABC):
     self.stop(sig=signal.SIGKILL)
     self.start()
 
-  def check_watchdog(self, started: bool, params: Params) -> None:
+  def check_watchdog(self, started: bool) -> None:
     if self.watchdog_max_dt is None or self.proc is None:
       return
 
@@ -285,7 +285,7 @@ def ensure_running(procs: ValuesView[ManagerProcess], started: bool, params=None
     else:
       p.stop(block=False)
 
-    p.check_watchdog(started, params)
+    p.check_watchdog(started)
 
   for p in running:
     p.start()
