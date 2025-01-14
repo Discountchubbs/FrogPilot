@@ -55,13 +55,31 @@ void FrogPilotSettingsWindow::createPanelButtons(FrogPilotListWidget *list) {
   QObject::connect(frogpilotVisualsPanel, &FrogPilotVisualsPanel::openParentToggle, this, &FrogPilotSettingsWindow::openParentToggle);
   QObject::connect(frogpilotVisualsPanel, &FrogPilotVisualsPanel::openSubParentToggle, this, &FrogPilotSettingsWindow::openSubParentToggle);
 
-  std::vector<std::vector<std::tuple<QString, QWidget*>>> panelButtons = {
-    {{tr("MANAGE"), frogpilotSoundsPanel}},
-    {{tr("DRIVING MODEL"), frogpilotModelPanel}, {tr("GAS / BRAKE"), frogpilotLongitudinalPanel}, {tr("STEERING"), frogpilotLateralPanel}},
-    {{tr("MAP DATA"), frogpilotMapsPanel}, {tr("PRIMELESS NAVIGATION"), frogpilotPrimelessPanel}},
-    {{tr("DATA"), new FrogPilotDataPanel(this)}, {tr("DEVICE CONTROLS"), frogpilotDevicePanel}, {tr("UTILITIES"), new FrogPilotUtilitiesPanel(this)}},
-    {{tr("APPEARANCE"), frogpilotVisualsPanel}, {tr("THEME"), frogpilotThemesPanel}},
-    {{tr("MANAGE"), new FrogPilotVehiclesPanel(this)}}
+  std::vector<std::vector<std::tuple<QString, QWidget*>>> panelButtons;
+
+  panelButtons = {
+    {std::make_tuple(tr("MANAGE"), frogpilotSoundsPanel)},
+    {
+      std::make_tuple(tr("DRIVING MODEL"), frogpilotModelPanel),
+      std::make_tuple(tr("GAS / BRAKE"), frogpilotLongitudinalPanel),
+      std::make_tuple(tr("STEERING"), frogpilotLateralPanel)
+    },
+    {
+      std::make_tuple(tr("MAP DATA"), frogpilotMapsPanel),
+      std::make_tuple(tr("PRIMELESS NAVIGATION"), frogpilotPrimelessPanel)
+    },
+    {
+      std::make_tuple(tr("DATA"), new FrogPilotDataPanel(this)),
+      std::make_tuple(tr("DEVICE CONTROLS"), frogpilotDevicePanel),
+      std::make_tuple(tr("UTILITIES"), new FrogPilotUtilitiesPanel(this))
+    },
+    {
+      std::make_tuple(tr("APPEARANCE"), frogpilotVisualsPanel),
+      std::make_tuple(tr("THEME"), frogpilotThemesPanel)
+    },
+    {
+      std::make_tuple(tr("MANAGE"), new FrogPilotVehiclesPanel(this))
+    }
   };
 
   std::vector<std::tuple<QString, QString, QString>> panelInfo = {

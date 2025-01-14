@@ -1,26 +1,33 @@
-merge-resolver.sh
-cat > merge-resolver.sh << 'EOF'
 #!/bin/bash
 
-# Abort any existing cherry-pick
+echo "Please enter the commit hash you want to cherry-pick:"
+read COMMIT_HASH
+
+# Validate commit hash
+if ! [[ $COMMIT_HASH =~ ^[0-9a-f]{40}$ ]] && ! [[ $COMMIT_HASH =~ ^[0-9a-f]{7,8}$ ]]; then
+    echo "Error: Invalid commit hash format"
+    exit 1
+fi
+
+# Abort existing cherry-pick
 git cherry-pick --abort
 
-# Start the cherry-pick
-git cherry-pick -n 9ffbbf8022be64213af2b83ff6208b4687573671
+# Start cherry-pick
+echo "Starting cherry-pick for commit: $COMMIT_HASH"
+git cherry-pick -n $COMMIT_HASH
 
-# Force remove all conflicting files
-git ls-files -u | cut -f 2 | sort -u | while read file; do
-    git rm -f "$file"
-    git checkout CHERRY_HEAD -- "$file" 2>/dev/null || true
+# Accept all incoming changes including deletions
+git diff --name-only --diff-filter=U | while read file; do
+    if [ -f "$file" ]; then
+        git checkout --theirs -- "$file"
+    else
+        git rm "$file"
+    fi
 done
 
-# Add all changes
+# Stage and commit
 git add -A
+git commit -C $COMMIT_HASH
 
-# Complete the cherry-pick
-git commit -C 9ffbbf8022be64213af2b83ff6208b4687573671
-EOF
-
-# Make executable and run
-chmod +x merge-resolver.sh
-./merge-resolver.sh
+echo "Cherry-pick completed successfully!"
+exit 0

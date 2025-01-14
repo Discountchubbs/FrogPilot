@@ -584,7 +584,7 @@ class FrogPilotVariables:
     toggle.experimental_mode_via_lkas = not toggle.always_on_lateral_lkas and toggle.experimental_mode_via_press and car_make != "subaru" and (params.get_bool("ExperimentalModeViaLKAS") if tuning_level >= level["ExperimentalModeViaLKAS"] else default.get_bool("ExperimentalModeViaLKAS"))
     toggle.experimental_mode_via_tap = toggle.experimental_mode_via_press and (params.get_bool("ExperimentalModeViaTap") if tuning_level >= level["ExperimentalModeViaTap"] else default.get_bool("ExperimentalModeViaTap"))
 
-    toggle.far_lead_tracking = allow_far_lead_tracking and has_radar
+    toggle.far_lead_tracking = toggle.allow_far_lead_tracking and has_radar
 
     toggle.frogsgomoo_tweak = openpilot_longitudinal and car_make == "toyota" and (params.get_bool("FrogsGoMoosTweak") if tuning_level >= level["FrogsGoMoosTweak"] else default.get_bool("FrogsGoMoosTweak"))
     toggle.kiBP = [0., CITY_SPEED_LIMIT] if toggle.frogsgomoo_tweak else kiBP
@@ -760,5 +760,13 @@ class FrogPilotVariables:
 
     toggle.volt_sng = car_model == "CHEVROLET_VOLT" and (params.get_bool("VoltSNG") if tuning_level >= level["VoltSNG"] else default.get_bool("VoltSNG"))
 
-    params_memory.put("FrogPilotToggles", json.dumps(toggle.__dict__))
+    serializable_dict = {}
+    for key, value in toggle.__dict__.items():
+      try:
+        json.dumps({key: value})
+        serializable_dict[key] = value
+      except TypeError as e:
+        print(f"Serialization Error for key '{key}': {e}")
+
+    params_memory.put("FrogPilotToggles", json.dumps(serializable_dict))
     params_memory.remove("FrogPilotTogglesUpdated")

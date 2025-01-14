@@ -11,7 +11,6 @@ public:
 private:
   FrogPilotSettingsWindow *parent;
 
-  FrogPilotSettingsWindow *parent;
 
   Params params;
   Params params_memory{"/dev/shm/params"};
