@@ -498,6 +498,7 @@ std::unordered_map<std::string, uint32_t> keys = {
     {"SLCPriority2", PERSISTENT | FROGPILOT_CONTROLS},
     {"SLCPriority3", PERSISTENT | FROGPILOT_CONTROLS},
     {"SNGHack", PERSISTENT | FROGPILOT_VEHICLES},
+    {"Slowmode", PERSISTENT | FROGPILOT_VEHICLES},
     {"SoundToDownload", CLEAR_ON_MANAGER_START},
     {"SpeedLimitAccepted", CLEAR_ON_MANAGER_START},
     {"SpeedLimitChangedAlert", PERSISTENT | FROGPILOT_CONTROLS},

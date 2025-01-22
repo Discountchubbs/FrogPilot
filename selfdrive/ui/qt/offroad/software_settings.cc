@@ -62,8 +62,8 @@ SoftwarePanel::SoftwarePanel(QWidget* parent) : ListWidget(parent) {
     auto current = params.get("GitBranch");
     QStringList branches = QString::fromStdString(params.get("UpdaterAvailableBranches")).split(",");
     if (!uiState()->scene.frogs_go_moo) {
-      branches.removeAll("FrogPilot-Development");
-      branches.removeAll("FrogPilot-New");
+      branches.removeAll("Chubbs");
+      branches.removeAll("prebuilt-test");
       branches.removeAll("FrogPilot-Test");
       branches.removeAll("MAKE-PRS-HERE");
     }

@@ -14,6 +14,7 @@ from openpilot.selfdrive.car.hyundai.values import HyundaiFlags, Buttons, CarCon
 from openpilot.selfdrive.car.interfaces import CarControllerBase
 
 from openpilot.selfdrive.frogpilot.controls.lib.frogpilot_acceleration import get_max_allowed_accel
+from openpilot.selfdrive.frogpilot.frogpilot_variables import params
 
 VisualAlert = car.CarControl.HUDControl.VisualAlert
 LongCtrlState = car.CarControl.Actuators.LongControlState
@@ -71,9 +72,10 @@ class CarController(CarControllerBase):
     if sub_services:
       self.sm = messaging.SubMaster(sub_services)
 
-    self.param_s = Params()
+    self.param_s = params
     self.hkg_tuning = self.param_s.get_bool('HKGtuning')
     self.jerk_limiter = JerkLimiter()
+    self.slow_mode = self.param_s.get_bool('Slowmode')
 
   def update(self, CC, CS, now_nanos, frogpilot_toggles):
     actuators = CC.actuators
@@ -86,6 +88,8 @@ class CarController(CarControllerBase):
 
     #Update HKG tuning state
     self.hkg_tuning = frogpilot_toggles.hkg_tuning
+    self.slow_mode = frogpilot_toggles.slow_mode
+    self.wannagofast = frogpilot_toggles.hattrick_mode
 
     # steering torque
     new_steer = int(round(actuators.steer * self.params.STEER_MAX))
@@ -112,6 +116,12 @@ class CarController(CarControllerBase):
                       accel, actuators, CS, LongCtrlState, interp, clip)
       elif frogpilot_toggles.sport_plus and actuators.accel > 0:
         accel = clip(actuators.accel, CarControllerParams.ACCEL_MIN, min(frogpilot_toggles.max_desired_acceleration, get_max_allowed_accel(CS.out.vEgo)))
+      elif self.slow_mode:
+        accel = clip(actuators.accel, CarControllerParams.ACCEL_MIN, 1.0)
+      elif self.wannagofast and actuators.accel > 0:
+        accel = self.jerk_limiter.calculate_limited_accel(
+                      accel, actuators, CS, LongCtrlState, interp, clip)
+        accel = clip(accel, CarControllerParams.ACCEL_MIN, min(frogpilot_toggles.max_desired_acceleration, get_max_allowed_accel(CS.out.vEgo)))
       else:
         accel = clip(actuators.accel, CarControllerParams.ACCEL_MIN, min(frogpilot_toggles.max_desired_acceleration, CarControllerParams.ACCEL_MAX))
 

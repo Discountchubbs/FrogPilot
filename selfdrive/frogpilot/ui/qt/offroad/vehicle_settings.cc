@@ -1,5 +1,6 @@
 #include <QRegularExpression>
 #include <QTextStream>
+#include <QMessageBox>
 
 #include "selfdrive/frogpilot/ui/qt/offroad/vehicle_settings.h"
 
@@ -176,7 +177,48 @@ FrogPilotVehiclesPanel::FrogPilotVehiclesPanel(FrogPilotSettingsWindow *parent) 
         clusterOffsetToggle->refresh();
       });
       vehicleToggle = clusterOffsetToggle;
+    } else if (param == "HKGtuning") {
+      std::vector<QString> tuningToggles{
+          "Slow Mode",
+          "Hattrick"
+      };
+      std::vector<QString> tuningToggleNames{
+          tr("Slow Mode"),
+          tr("Hattrick")
+      };
+      FrogPilotButtonToggleControl *hkgtuningToggle = new FrogPilotButtonToggleControl(
+          param, title, desc, tuningToggles, tuningToggleNames, false
+      );
 
+      params.putBool("Slowmode", false);
+      params.putBool("HatTrick", false);
+
+      QObject::connect(hkgtuningToggle, &FrogPilotButtonToggleControl::buttonClicked, [=](int id) {
+          // Get current states
+          bool slowState = params.getBool("Slowmode");
+          bool hatState = params.getBool("HatTrick");
+
+          if (id == 0) {  // Slow Mode clicked
+              if (!slowState) {  // Enable Slow Mode
+                  params.putBool("Slowmode", true);
+                  params.putBool("HatTrick", false);
+                  FrogPilotConfirmationDialog::toggleAlert(tr("Slow Mode enabled - acceleration and deceleration will be gentler."), tr("Ok"), this);
+              } else {  // Disable Slow Mode
+                  params.putBool("Slowmode", false);
+              }
+          } else if (id == 1) {  // Hattrick clicked
+              if (!hatState) {  // Enable Hattrick
+                  params.putBool("HatTrick", true);
+                  params.putBool("Slowmode", false);
+                  FrogPilotConfirmationDialog::toggleAlert(tr("WannaGoFast! - acceleration will be WAY more aggressive. Use with caution!"), tr("Ok"), this);
+              } else {  // Disable Hattrick
+                  params.putBool("HatTrick", false);
+              }
+          }
+          hkgtuningToggle->refresh();
+      });
+
+      vehicleToggle = hkgtuningToggle;
     } else {
       vehicleToggle = new ParamControl(param, title, desc, icon);
     }

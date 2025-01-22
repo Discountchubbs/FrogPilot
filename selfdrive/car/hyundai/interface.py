@@ -104,6 +104,7 @@ class CarInterface(CarInterfaceBase):
     # Configure longitudinal tuning
     hkg_tuning = params.get_bool("HKGtuning")
     hat_trick = params.get_bool("HatTrick")
+    slow_mode = params.get_bool("Slowmode")
     ret.longitudinalTuning.deadzoneBP = [0.0]
     ret.longitudinalTuning.deadzoneV = [0.0]
     ret.longitudinalTuning.kpBP = [0.0]
@@ -112,7 +113,7 @@ class CarInterface(CarInterfaceBase):
     # HKG tuning without hat trick
     if hkg_tuning and not hat_trick:
       ret.longitudinalTuning.kiV = [0.02, 0.01]
-      ret.vEgoStopping = 0.50
+      ret.vEgoStopping = 0.25
       ret.vEgoStarting = 0.10
       ret.longitudinalActuatorDelay = 0.5
 
@@ -122,22 +123,30 @@ class CarInterface(CarInterfaceBase):
           ret.startingState = True
           ret.startAccel = 1.6
 
-      ret.longitudinalTuning.kpV = [0.4] if is_canfd_car else [0.5]
-      if Params().get_bool("HyundaiRadarTracksAvailable"):
-          ret.stoppingDecelRate = 0.01  # Lower decel rate when we have working Mando radar tracks
+      if is_canfd_car:
+          ret.longitudinalTuning.kpV = [0.5]
+      elif slow_mode:
+          ret.longitudinalTuning.kpV = [0.1]
       else:
-          ret.stoppingDecelRate = 0.05   # Default  decel rate
+          ret.longitudinalTuning.kpV = [0.5]
+
+      if Params().get_bool("HyundaiRadarTracksAvailable"):
+          ret.stoppingDecelRate = 0.01
+      elif slow_mode:
+          ret.stoppingDecelRate = 0.005
+      else:
+          ret.stoppingDecelRate = 0.05
 
     # HKG tuning with hat trick or just hat trick
     elif (hkg_tuning and hat_trick) or hat_trick:
       ret.longitudinalTuning.kiV = [0.5, 0.25]
-      ret.vEgoStopping = 0.50
+      ret.vEgoStopping = 0.25
       ret.vEgoStarting = 0.10
-      ret.longitudinalActuatorDelay = 0.5
-      ret.startAccel = 1.6
+      ret.longitudinalActuatorDelay = 0.2
+      ret.startAccel = 2.0
 
       ret.startingState = not bool(ret.flags & (HyundaiFlags.HYBRID | HyundaiFlags.EV))
-      ret.longitudinalTuning.kpV = [0.75] if is_canfd_car else [0.8]
+      ret.longitudinalTuning.kpV = [2.0] if is_canfd_car else [1.5]
       ret.stoppingDecelRate = 0.05
 
     # Default tuning
@@ -151,6 +160,8 @@ class CarInterface(CarInterfaceBase):
       ret.longitudinalTuning.kiV = [0.0]
       if Params().get_bool("HyundaiRadarTracksAvailable"):
           ret.stoppingDecelRate = 0.01
+      elif slow_mode:
+          ret.stoppingDecelRate = 0.005
       else:
           ret.stoppingDecelRate = 0.05
 
