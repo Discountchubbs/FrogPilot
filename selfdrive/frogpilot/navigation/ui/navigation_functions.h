@@ -203,6 +203,8 @@ private:
   void loadSelectedMaps();
   void updateSelectedMaps();
 
+  bool isCountry;
+
   Params params;
 
   QButtonGroup *buttonGroup;
@@ -216,6 +218,4 @@ private:
   QMap<QString, QString> mapData;
 
   QString selectionType;
-
-  bool isCountry;
 };

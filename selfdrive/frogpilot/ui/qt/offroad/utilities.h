@@ -9,9 +9,8 @@ public:
   explicit FrogPilotUtilitiesPanel(FrogPilotSettingsWindow *parent);
 
 private:
-  FrogPilotButtonsControl *forceStartedBtn;
-
   FrogPilotSettingsWindow *parent;
+
 
   Params params;
   Params params_memory{"/dev/shm/params"};

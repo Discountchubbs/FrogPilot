@@ -47,20 +47,17 @@ UNLOCK_CMD = b"\x40\x05\x30\x11\x00\x40\x00\x00"
 
 PARK = car.CarState.GearShifter.park
 
-def get_long_tune(CP, params):
-  kiBP = [0.]
-  kdBP = [0.]
-  kdV = [0.]
-
-  if CP.enableGasInterceptor:
-    kiBP = [0., 5., 20.]
-    kiV = [1.3, 1.0, 0.7]
-  elif CP.carFingerprint in TSS2_CAR:
-    kiV = [0.25]
+def get_long_tune(CP, params, frogpilot_toggles=None):
+  if frogpilot_toggles:
+    kiBP = frogpilot_toggles.kiBP
+    kdBP = [0.]
+    kiV = frogpilot_toggles.kiV
     kdV = [0.25 / 4]
   else:
-    kiBP = [0., 5., 35.]
-    kiV = [3.6, 2.4, 1.5]
+    kiBP = [0.]
+    kdBP = [0.]
+    kiV = [0.25]
+    kdV = [0.25 / 4]
 
   return PIDController(0.0, (kiBP, kiV), k_f=1.0, k_d=(kdBP, kdV),
                        pos_limit=params.ACCEL_MAX, neg_limit=params.ACCEL_MIN,
@@ -115,10 +112,17 @@ class CarController(CarControllerBase):
     if frogpilot_toggles.sport_plus:
       if not self.updated_pid:
         self.params.ACCEL_MAX = get_max_allowed_accel(0)
-        self.long_pid = get_long_tune(self.CP, self.params)
+        self.long_pid = get_long_tune(self.CP, self.params, frogpilot_toggles)
         self.updated_pid = True
 
       self.params.ACCEL_MAX = min(frogpilot_toggles.max_desired_acceleration, get_max_allowed_accel(CS.out.vEgo))
+    elif frogpilot_toggles.frogsgomoo_tweak:
+      if not self.updated_pid:
+        self.params.ACCEL_MAX = self.stock_max_accel
+        self.long_pid = get_long_tune(self.CP, self.params, frogpilot_toggles)
+        self.updated_pid = True
+
+      self.params.ACCEL_MAX = min(frogpilot_toggles.max_desired_acceleration, self.stock_max_accel)
     else:
       if self.updated_pid:
         self.params.ACCEL_MAX = self.stock_max_accel

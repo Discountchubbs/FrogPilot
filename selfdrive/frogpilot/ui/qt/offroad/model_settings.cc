@@ -148,7 +148,6 @@ FrogPilotModelPanel::FrogPilotModelPanel(FrogPilotSettingsWindow *parent) : Frog
 
             params_memory.putBool("CancelModelDownload", true);
           } else {
-            QStringList downloadableModels = availableModelNames;
             for (const QString &file : modelDir.entryList(QDir::Files)) {
               downloadableModels.removeAll(modelFileToNameMap.value(QFileInfo(file).baseName()));
             }
@@ -256,7 +255,7 @@ void FrogPilotModelPanel::showEvent(QShowEvent *event) {
     modelFileToNameMapProcessed.insert(availableModels[i], processModelName(availableModelNames[i]));
   }
 
-  QStringList downloadableModels = availableModelNames;
+  downloadableModels = availableModelNames;
   for (const QString &file : modelDir.entryList(QDir::Files)) {
     downloadableModels.removeAll(modelFileToNameMap.value(QFileInfo(file).baseName()));
   }

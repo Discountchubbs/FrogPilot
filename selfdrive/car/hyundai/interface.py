@@ -14,7 +14,7 @@ from openpilot.selfdrive.car import create_button_events, get_safety_config
 from openpilot.selfdrive.car.interfaces import CarInterfaceBase
 from openpilot.selfdrive.car.disable_ecu import disable_ecu
 
-from openpilot.selfdrive.frogpilot.frogpilot_variables import params
+from openpilot.selfdrive.frogpilot.frogpilot_variables import params, CITY_SPEED_LIMIT
 
 Ecu = car.CarParams.Ecu
 ButtonType = car.CarState.ButtonEvent.Type
@@ -107,13 +107,13 @@ class CarInterface(CarInterfaceBase):
     ret.longitudinalTuning.deadzoneBP = [0.0]
     ret.longitudinalTuning.deadzoneV = [0.0]
     ret.longitudinalTuning.kpBP = [0.0]
-    ret.longitudinalTuning.kiBP = [0.0]
+    ret.longitudinalTuning.kiBP = [0.0, CITY_SPEED_LIMIT]
 
     # HKG tuning without hat trick
     if hkg_tuning and not hat_trick:
-      ret.longitudinalTuning.kiV = [0.0]
-      ret.vEgoStopping = 0.10
-      ret.vEgoStarting = 0.15
+      ret.longitudinalTuning.kiV = [0.02, 0.01]
+      ret.vEgoStopping = 0.50
+      ret.vEgoStarting = 0.10
       ret.longitudinalActuatorDelay = 0.5
 
       if ret.flags & (HyundaiFlags.HYBRID | HyundaiFlags.EV):
@@ -122,29 +122,37 @@ class CarInterface(CarInterfaceBase):
           ret.startingState = True
           ret.startAccel = 1.6
 
-      ret.longitudinalTuning.kpV = [0.4] if is_canfd_car else [0.1]
-      ret.stoppingDecelRate = 0.05 if (ret.flags & HyundaiFlags.MANDO_RADAR) else 0.2
+      ret.longitudinalTuning.kpV = [0.4] if is_canfd_car else [0.5]
+      if Params().get_bool("HyundaiRadarTracksAvailable"):
+          ret.stoppingDecelRate = 0.01  # Lower decel rate when we have working Mando radar tracks
+      else:
+          ret.stoppingDecelRate = 0.05   # Default  decel rate
 
     # HKG tuning with hat trick or just hat trick
     elif (hkg_tuning and hat_trick) or hat_trick:
-      ret.longitudinalTuning.kiV = [0.02]
-      ret.vEgoStopping = 0.10
-      ret.vEgoStarting = 0.15
+      ret.longitudinalTuning.kiV = [0.5, 0.25]
+      ret.vEgoStopping = 0.50
+      ret.vEgoStarting = 0.10
       ret.longitudinalActuatorDelay = 0.5
-      ret.startAccel = 2.0
+      ret.startAccel = 1.6
 
       ret.startingState = not bool(ret.flags & (HyundaiFlags.HYBRID | HyundaiFlags.EV))
-      ret.longitudinalTuning.kpV = [1.0] if is_canfd_car else [0.4]
-      ret.stoppingDecelRate = 0.15 if is_canfd_car else 0.1
+      ret.longitudinalTuning.kpV = [0.75] if is_canfd_car else [0.8]
+      ret.stoppingDecelRate = 0.05
 
     # Default tuning
     else:
-      ret.longitudinalTuning.kpV = [0.35] if is_canfd_car else [0.1]
+      ret.longitudinalTuning.kpV = [0.3] if is_canfd_car else [0.5]
       ret.longitudinalTuning.kiV = [0.0]
 
     # API-specific tuning
     if use_new_api:
-      ret.stoppingDecelRate = 0.1
+      ret.longitudinalTuning.kiBP = [0.0]
+      ret.longitudinalTuning.kiV = [0.0]
+      if Params().get_bool("HyundaiRadarTracksAvailable"):
+          ret.stoppingDecelRate = 0.01
+      else:
+          ret.stoppingDecelRate = 0.05
 
     # Determine experimental longitudinal availability
     unsupported_long_cars = (

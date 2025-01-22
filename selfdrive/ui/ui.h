@@ -154,6 +154,7 @@ typedef struct UIScene {
   bool compass;
   bool conditional_experimental;
   bool cpu_metrics;
+  bool downloading_update;
   bool driver_camera_in_reverse;
   bool dynamic_path_width;
   bool dynamic_pedals_on_ui;
@@ -162,6 +163,7 @@ typedef struct UIScene {
   bool experimental_mode_via_tap;
   bool fahrenheit;
   bool force_onroad;
+  bool frogpilot_panel_active;
   bool frogs_go_moo;
   bool full_map;
   bool gpu_metrics;
@@ -174,7 +176,6 @@ typedef struct UIScene {
   bool hide_speed_limit;
   bool ip_metrics;
   bool jerk_metrics;
-  bool keep_screen_on;
   bool lateral_tuning_metrics;
   bool lead_metrics;
   bool left_curve;

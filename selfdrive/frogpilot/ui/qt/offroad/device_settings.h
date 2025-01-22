@@ -19,10 +19,6 @@ private:
   void showToggles(const std::set<QString> &keys);
   void updateState(const UIState &s);
 
-  FrogPilotSettingsWindow *parent;
-
-  QJsonObject frogpilotToggleLevels;
-
   bool started;
 
   int tuningLevel;
@@ -31,4 +27,8 @@ private:
 
   std::set<QString> deviceManagementKeys = {"DeviceShutdown", "IncreaseThermalLimits", "LowVoltageShutdown", "NoLogging", "NoUploads", "OfflineMode"};
   std::set<QString> screenKeys = {"ScreenBrightness", "ScreenBrightnessOnroad", "ScreenRecorder", "ScreenTimeout", "ScreenTimeoutOnroad"};
+
+  FrogPilotSettingsWindow *parent;
+
+  QJsonObject frogpilotToggleLevels;
 };

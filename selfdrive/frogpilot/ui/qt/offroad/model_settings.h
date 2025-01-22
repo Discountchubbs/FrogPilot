@@ -24,6 +24,21 @@ private:
   void updateModelLabels();
   void updateState(const UIState &s);
 
+  bool allModelsDownloaded;
+  bool allModelsDownloading;
+  bool cancellingDownload;
+  bool finalizingDownload;
+  bool modelDownloading;
+  bool modelRandomizerOpen;
+  bool noModelsDownloaded;
+  bool started;
+
+  int tuningLevel;
+
+  std::map<QString, AbstractControl*> toggles;
+
+  std::set<QString> modelRandomizerKeys = {"ManageBlacklistedModels", "ResetScores", "ReviewScores"};
+
   ButtonControl *selectModelBtn;
 
   FrogPilotButtonsControl *deleteModelBtn;
@@ -47,19 +62,5 @@ private:
 
   QStringList availableModels;
   QStringList availableModelNames;
-
-  bool allModelsDownloaded;
-  bool allModelsDownloading;
-  bool cancellingDownload;
-  bool finalizingDownload;
-  bool modelDownloading;
-  bool modelRandomizerOpen;
-  bool noModelsDownloaded;
-  bool started;
-
-  int tuningLevel;
-
-  std::map<QString, AbstractControl*> toggles;
-
-  std::set<QString> modelRandomizerKeys = {"ManageBlacklistedModels", "ResetScores", "ReviewScores"};
+  QStringList downloadableModels;
 };

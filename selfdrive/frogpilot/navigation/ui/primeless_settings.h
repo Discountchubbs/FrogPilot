@@ -21,6 +21,10 @@ private:
   void updateState();
   void updateStep();
 
+  bool mapboxPublicKeySet;
+  bool mapboxSecretKeySet;
+  bool setupCompleted;
+
   ButtonControl *publicMapboxKeyControl;
   ButtonControl *secretMapboxKeyControl;
   ButtonControl *setupButton;
@@ -33,10 +37,6 @@ private:
 
   Params params;
   Params paramsStorage{"/persist/params"};
-
-  bool mapboxPublicKeySet;
-  bool mapboxSecretKeySet;
-  bool setupCompleted;
 
   QLabel *imageLabel;
 };

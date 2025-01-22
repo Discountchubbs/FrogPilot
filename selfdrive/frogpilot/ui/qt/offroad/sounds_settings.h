@@ -18,12 +18,6 @@ private:
   void showEvent(QShowEvent *event) override;
   void showToggles(const std::set<QString> &keys);
 
-  FrogPilotSettingsWindow *parent;
-
-  QJsonObject frogpilotToggleLevels;
-
-  Params params;
-
   bool hasBSM;
   bool hasOpenpilotLongitudinal;
 
@@ -33,4 +27,10 @@ private:
 
   std::set<QString> alertVolumeControlKeys = {"DisengageVolume", "EngageVolume", "PromptDistractedVolume", "PromptVolume", "RefuseVolume", "WarningImmediateVolume", "WarningSoftVolume"};
   std::set<QString> customAlertsKeys = {"GoatScream", "GreenLightAlert", "LeadDepartingAlert", "LoudBlindspotAlert", "SpeedLimitChangedAlert"};
+
+  FrogPilotSettingsWindow *parent;
+
+  QJsonObject frogpilotToggleLevels;
+
+  Params params;
 };

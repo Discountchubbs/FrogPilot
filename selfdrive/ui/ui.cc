@@ -309,7 +309,7 @@ static void update_state(UIState *s) {
     scene.vtsc_controlling_curve = frogpilotPlan.getVtscControllingCurve();
     scene.vtsc_speed = frogpilotPlan.getVtscSpeed();
     if (frogpilotPlan.getTogglesUpdated() && sm.frame % UI_FREQ == 0) {
-      scene.frogpilot_toggles = QJsonDocument::fromJson(QString::fromStdString(s->params_memory.get("FrogPilotToggles", true)).toUtf8()).object();
+      scene.frogpilot_toggles = QJsonDocument::fromJson(s->params_memory.get("FrogPilotToggles", true).c_str()).object();
 
       ui_update_params(s);
       ui_update_theme(s);
@@ -555,7 +555,7 @@ void UIState::update() {
   scene.force_onroad = params_memory.getBool("ForceOnroad");
   scene.started_timer = scene.started || started_prev ? scene.started_timer + 1 : 0;
 
-  if (scene.keep_screen_on) {
+  if (scene.downloading_update || scene.frogpilot_panel_active) {
     device()->resetInteractiveTimeout(scene.screen_timeout, scene.screen_timeout_onroad);
   }
 }
