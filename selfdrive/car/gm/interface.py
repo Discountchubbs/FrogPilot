@@ -152,6 +152,7 @@ class CarInterface(CarInterfaceBase):
         ret.pcmCruise = False
         ret.openpilotLongitudinalControl = True
         ret.safetyConfigs[0].safetyParam |= Panda.FLAG_GM_HW_CAM_LONG
+      ret.customStockLongAvailable = True
 
     elif candidate in SDGM_CAR:
       if use_new_api:
@@ -405,6 +406,7 @@ class CarInterface(CarInterfaceBase):
       c.longActive:
       events.add(EventName.pedalInterceptorNoBrake)
 
+    ret.customStockLong = self.update_custom_stock_long()
     ret.events = events.to_msg()
 
     return ret, fp_ret

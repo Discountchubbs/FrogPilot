@@ -18,6 +18,7 @@ class CarInterface(CarInterfaceBase):
     ret.radarUnavailable = True # DBC[candidate]['radar'] is None
     ret.steerActuatorDelay = 0.1
     ret.steerLimitTimer = 0.4
+    ret.customStockLongAvailable = True
 
     # safety config
     ret.safetyConfigs = [get_safety_config(car.CarParams.SafetyModel.chrysler)]
@@ -111,6 +112,7 @@ class CarInterface(CarInterfaceBase):
     if self.low_speed_alert:
       events.add(car.CarEvent.EventName.belowSteerSpeed)
 
+    ret.customStockLong = self.update_custom_stock_long()
     ret.events = events.to_msg()
 
     return ret, fp_ret

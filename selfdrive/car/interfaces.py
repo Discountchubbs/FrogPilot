@@ -20,7 +20,7 @@ from openpilot.common.realtime import DT_CTRL
 from openpilot.selfdrive.car import apply_hysteresis, gen_empty_fingerprint, scale_rot_inertia, scale_tire_stiffness, STD_CARGO_KG
 from openpilot.selfdrive.car.hyundai.hkg_additions import ParamManager
 from openpilot.selfdrive.car.values import PLATFORMS
-from openpilot.selfdrive.controls.lib.drive_helpers import CRUISE_LONG_PRESS, V_CRUISE_MAX, get_friction
+from openpilot.selfdrive.controls.lib.drive_helpers import CRUISE_LONG_PRESS, V_CRUISE_MAX, V_CRUISE_UNSET, get_friction
 from openpilot.selfdrive.controls.lib.events import Events
 from openpilot.selfdrive.controls.lib.vehicle_model import VehicleModel
 
@@ -355,7 +355,7 @@ class CarInterfaceBase(ABC):
     ret.minSteerSpeed = 0.
     ret.wheelSpeedFactor = 1.0
 
-    ret.pcmCruise = True     # openpilot's state is tied to the PCM's cruise state on most cars
+    ret.pcmCruise = True # openpilot's state is tied to the PCM's cruise state on most cars
     ret.minEnableSpeed = -1. # enable is done by stock ACC, so ignore this
     ret.steerRatioRear = 0.  # no rear steering, at least on the listed cars aboveA
     ret.openpilotLongitudinalControl = False
@@ -432,7 +432,6 @@ class CarInterfaceBase(ABC):
       self.CS.out = ret.as_reader()
 
     return ret, fp_ret
-
 
   def create_common_events(self, cs_out, extra_gears=None, pcm_enable=True, allow_enable=True,
                            enable_buttons=(ButtonType.accelCruise, ButtonType.decelCruise)):
@@ -515,6 +514,20 @@ class CarInterfaceBase(ABC):
 
     return events
 
+  @staticmethod
+  def cp_v_cruise_initialized(v_cruise):
+    return v_cruise != V_CRUISE_UNSET
+
+
+  def update_custom_stock_long(self):
+    customStockLong = car.CarState.CustomStockLong.new_message()
+    if params.get_bool("CustomStockLong"):
+        customStockLong.cruiseButton = 0 if self.CS.custom_stock_long.cruise_button is None else int(self.CS.custom_stock_long.cruise_button)
+        customStockLong.targetSpeed = float(self.CS.custom_stock_long.target_speed)
+        customStockLong.vSetDis = float(self.CS.custom_stock_long.v_set_dis)
+        customStockLong.buttonType = int(self.CS.custom_stock_long.button_type)
+    return customStockLong
+
   def frogpilot_distance_functions(self, frogpilot_toggles):
     distance_button = self.CS.distance_button or params_memory.get_bool("OnroadDistanceButtonPressed")
 
@@ -560,7 +573,10 @@ class CarStateBase(ABC):
     self.CP = CP
     self.car_fingerprint = CP.carFingerprint
     self.out = car.CarState.new_message()
-
+    self.cruise_button = None
+    self.target_speed = 0.0
+    self.v_set_dis = 0.0
+    self.button_type = 0
     self.cruise_buttons = 0
     self.left_blinker_cnt = 0
     self.right_blinker_cnt = 0

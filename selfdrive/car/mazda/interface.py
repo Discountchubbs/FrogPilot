@@ -16,6 +16,7 @@ class CarInterface(CarInterfaceBase):
     ret.carName = "mazda"
     ret.safetyConfigs = [get_safety_config(car.CarParams.SafetyModel.mazda)]
     ret.radarUnavailable = True
+    ret.customStockLongAvailable = True
 
     ret.steerActuatorDelay = 0.1
     ret.steerLimitTimer = 0.8
@@ -47,6 +48,7 @@ class CarInterface(CarInterfaceBase):
     elif self.CS.low_speed_alert:
       events.add(EventName.belowSteerSpeed)
 
+    ret.customStockLong = self.update_custom_stock_long()
     ret.events = events.to_msg()
 
     return ret, fp_ret

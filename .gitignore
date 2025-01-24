@@ -83,3 +83,4 @@ build/
 
 poetry.toml
 Pipfile
+merge-resolver.sh

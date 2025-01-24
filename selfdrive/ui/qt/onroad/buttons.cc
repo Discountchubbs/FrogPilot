@@ -46,7 +46,8 @@ ExperimentalButton::~ExperimentalButton() {
 
 void ExperimentalButton::changeMode() {
   const auto cp = (*uiState()->sm)["carParams"].getCarParams();
-  bool can_change = hasLongitudinalControl(cp) && params.getBool("ExperimentalModeConfirmed");
+  bool can_change = (hasLongitudinalControl(cp) || (params.getBool("CustomStockLongPlanner")))
+                    && params.getBool("ExperimentalModeConfirmed");
   if (can_change) {
     if (conditional_experimental) {
       int override_value = (conditional_status >= 1 && conditional_status <= 6) ? 0 : conditional_status >= 7 ? 5 : 6;

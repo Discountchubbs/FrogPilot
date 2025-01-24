@@ -648,7 +648,7 @@ class FrogPilotVariables:
       toggle.model = default.get("Model", encoding='utf-8')
       toggle.model_name = default.get("ModelName", encoding='utf-8')
       toggle.model_version = default.get("ModelVersion", encoding='utf-8')
-    toggle.classic_model = toggle.model_version in {"v1", "v2", "v3"}
+    toggle.classic_model = toggle.model_version in {"v1", "v2", "v3", "v4"}
     toggle.clipped_curvature_model = toggle.model_version in {"v5", "v6"}
     toggle.desired_curvature_model = toggle.model_version in {"v1", "v2", "v3", "v4", "v5"}
     toggle.navigation_model = toggle.model_version in {"v1"}

@@ -284,6 +284,8 @@ std::unordered_map<std::string, uint32_t> keys = {
     {"CustomSignals", PERSISTENT | FROGPILOT_VISUALS},
     {"CustomSounds", PERSISTENT | FROGPILOT_VISUALS},
     {"CustomUI", PERSISTENT | FROGPILOT_VISUALS},
+    {"CustomStockLong", PERSISTENT | FROGPILOT_VISUALS},
+    {"CustomStockLongPlanner", PERSISTENT | FROGPILOT_VISUALS},
     {"DecelerationProfile", PERSISTENT | FROGPILOT_CONTROLS},
     {"DeveloperUI", PERSISTENT | FROGPILOT_VISUALS},
     {"DeviceManagement", PERSISTENT | FROGPILOT_CONTROLS},

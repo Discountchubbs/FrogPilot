@@ -108,9 +108,9 @@ class HyundaiFlagsFP(IntFlag):
   FP_CAMERA_SCC_LEAD = 2 ** 2
   FP_LKAS12 = 2 ** 3
   FP_RADAR_TRACKS = 2 ** 4
-  FP_NON_SCC = 2 ** 3
-  FP_NON_SCC_FCA = 2 ** 4
-  FP_NON_SCC_RADAR_FCA = 2 ** 5
+  FP_NON_SCC = 2 ** 5
+  FP_NON_SCC_FCA = 2 ** 6
+  FP_NON_SCC_RADAR_FCA = 2 ** 7
 
 
 class Footnote(Enum):

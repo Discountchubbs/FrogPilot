@@ -30,9 +30,9 @@ class CarInterface(CarInterfaceBase):
   @staticmethod
   def _get_params(ret, candidate, fingerprint, car_fw, disable_openpilot_long, experimental_long, docs):
     use_new_api = params.get_bool("NewLongAPI")
-
     ret.carName = "hyundai"
     ret.radarUnavailable = RADAR_START_ADDR not in fingerprint[1] or DBC[ret.carFingerprint]["radar"] is None
+    ret.customStockLongAvailable = True
 
     # These cars have been put into dashcam only due to both a lack of users and test coverage.
     # These cars likely still work fine. Once a user confirms each car works and a test route is
@@ -297,6 +297,7 @@ class CarInterface(CarInterfaceBase):
       disable_ecu(logcan, sendcan, bus=CanBus(CP).ECAN, addr=0x7B1, com_cont_req=b'\x28\x83\x01')
 
   def _update(self, c, frogpilot_toggles):
+    sendcan = []
     ret, fp_ret = self.CS.update(self.cp, self.cp_cam, frogpilot_toggles)
 
     if self.CS.CP.openpilotLongitudinalControl:
@@ -305,7 +306,15 @@ class CarInterface(CarInterfaceBase):
         *create_button_events(self.CS.lkas_enabled, self.CS.lkas_previously_enabled, {1: FrogPilotButtonType.lkas}),
       ]
     else:
-      ret.buttonEvents = create_button_events(self.CS.lkas_enabled, self.CS.lkas_previously_enabled, {1: FrogPilotButtonType.lkas})
+      if self.params.get_bool("CustomStockLong"):
+        ret.buttonEvents = [
+          *create_button_events(self.CS.cruise_buttons[-1], self.CS.prev_cruise_buttons, BUTTONS_DICT),
+          *create_button_events(self.CS.lkas_enabled, self.CS.lkas_previously_enabled, {1: FrogPilotButtonType.lkas}),
+        ]
+        custom_long_msgs = self.CC.custom_stock_long.update_custom_stock_long(self.frame, self.CS, self.packer, self.CP)
+        sendcan.extend(custom_long_msgs)
+      else:
+        ret.buttonEvents = create_button_events(self.CS.lkas_enabled, self.CS.lkas_previously_enabled, {1: FrogPilotButtonType.lkas})
 
 
 
@@ -328,6 +337,7 @@ class CarInterface(CarInterfaceBase):
     and not self.CS.params_list.hyundai_radar_tracks_available_cache:
       events.add(car.CarEvent.EventName.hyundaiRadarTracksAvailable)
 
+    ret.customStockLong = self.update_custom_stock_long()
     ret.events = events.to_msg()
 
     return ret, fp_ret
