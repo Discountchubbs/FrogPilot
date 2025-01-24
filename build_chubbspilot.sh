@@ -74,13 +74,13 @@ check_prebuilt() {
     fi
 }
 
+
 # Function to perform compilation
 compile_device() {
     echo "Performing device compilation..."
 
     echo "Connecting to device at $DEVICE_IP..."
     OUTPUT=$(ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null "$DEVICE_USER@$DEVICE_IP" << 'ENDSSH'
-        set +x  # Disable debug mode for cleaner output
         set -e
         cd /data/openpilot
 
@@ -207,10 +207,7 @@ ENDSSH
 # Function to skip compilation and clean
 skip_compile_device() {
     echo "Proceeding without recompilation..." >&2  # Redirect to stderr
-    # Disable set -x for this function to prevent debug logs from polluting OUTPUT
-    set +x
     OUTPUT=$(ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null "$DEVICE_USER@$DEVICE_IP" << 'ENDSSH'
-        set +x  # Disable debug mode
         set -e
         cd /data/openpilot
 
@@ -318,6 +315,44 @@ workspace_operations() {
 
     git checkout "$BRANCH_NAME" || { echo "ERROR: Failed to checkout branch '$BRANCH_NAME'"; exit 1; }
     git cherry-pick --no-commit --strategy=recursive -X theirs "$device_commit" || { echo "ERROR: Cherry-pick failed"; exit 1; }
+
+    # Setup Git LFS
+    git lfs install
+    cat > .gitattributes << 'EOF'
+* text=auto
+
+# Binary files
+*.bin filter=lfs diff=lfs merge=lfs -text
+*.o filter=lfs diff=lfs merge=lfs -text
+*.so filter=lfs diff=lfs merge=lfs -text
+*.so.* filter=lfs diff=lfs merge=lfs -text
+*.a filter=lfs diff=lfs merge=lfs -text
+*.dll filter=lfs diff=lfs merge=lfs -text
+*.dylib filter=lfs diff=lfs merge=lfs -text
+*.pyc filter=lfs diff=lfs merge=lfs -text
+
+# Media files
+*.onnx filter=lfs diff=lfs merge=lfs -text
+*.svg filter=lfs diff=lfs merge=lfs -text
+*.png filter=lfs diff=lfs merge=lfs -text
+*.gif filter=lfs diff=lfs merge=lfs -text
+*.ttf filter=lfs diff=lfs merge=lfs -text
+*.wav filter=lfs diff=lfs merge=lfs -text
+
+# Project specific
+selfdrive/car/tests/test_models_segs.txt filter=lfs diff=lfs merge=lfs -text
+system/hardware/tici/updater filter=lfs diff=lfs merge=lfs -text
+selfdrive/ui/qt/spinner_larch64 filter=lfs diff=lfs merge=lfs -text
+selfdrive/ui/qt/text_larch64 filter=lfs diff=lfs merge=lfs -text
+selfdrive/ui/ui filter=lfs diff=lfs merge=lfs -text
+EOF
+
+    # Setup LFS tracking
+    git add .gitattributes
+    git lfs track "*.bin" "*.o" "*.so" "*.so.*" "*.a" "*.dll" "*.dylib" "*.pyc"
+    git lfs track "*.onnx" "*.svg" "*.png" "*.gif" "*.ttf" "*.wav"
+
+    # Add all files and commit
     git add -f .
     git commit -C "$device_commit" || { echo "ERROR: Commit failed"; exit 1; }
 
