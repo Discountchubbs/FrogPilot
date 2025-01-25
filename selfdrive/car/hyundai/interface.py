@@ -297,6 +297,7 @@ class CarInterface(CarInterfaceBase):
       disable_ecu(logcan, sendcan, bus=CanBus(CP).ECAN, addr=0x7B1, com_cont_req=b'\x28\x83\x01')
 
   def _update(self, c, frogpilot_toggles):
+    self.params = Params()
     sendcan = []
     ret, fp_ret = self.CS.update(self.cp, self.cp_cam, frogpilot_toggles)
 

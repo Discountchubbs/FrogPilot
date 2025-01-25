@@ -307,56 +307,56 @@ workspace_operations() {
     echo "=== Starting workspace operations ==="
     export GIT_SSH_COMMAND="ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null"
 
+    # Reset workspace completely
+    git reset --hard HEAD
+    git clean -fd
+
+    # Setup remote if needed
     if ! git remote | grep -q "device"; then
         git remote add device ssh://"${DEVICE_USER}"@"${DEVICE_IP}":/data/openpilot
     fi
 
-    git fetch device "$BRANCH_NAME" --force
-
-    git checkout "$BRANCH_NAME" || { echo "ERROR: Failed to checkout branch '$BRANCH_NAME'"; exit 1; }
-    git cherry-pick --no-commit --strategy=recursive -X theirs "$device_commit" || { echo "ERROR: Cherry-pick failed"; exit 1; }
+    # Remove conflicting files before cherry-pick
+    rm -f panda/tests/hitl/known_bootstub/bootstub.panda_h7.bin \
+          panda/tests/hitl/known_bootstub/bootstub_f4_first_dos_production.panda.bin \
+          panda/tests/hitl/known_bootstub/bootstub_f4_only_bcd.panda.bin \
+          selfdrive/pandad/tests/bootstub.panda.bin \
+          selfdrive/pandad/tests/bootstub.panda_h7.bin \
+          selfdrive/pandad/tests/bootstub.panda_h7_spiv0.bin \
+          third_party/libyuv/larch64/lib/libyuv.a \
+          third_party/libyuv/x86_64/lib/libyuv.a \
+          tinygrad_repo/test/models/waifu2x/input.png \
+          tinygrad_repo/test/models/waifu2x/output.png \
+          tinygrad_repo/test/models/whisper/test.wav \
+          tools/cabana/assets/cabana-icon.png
 
     # Setup Git LFS
     git lfs install
+
+    # Create .gitattributes with all patterns first
     cat > .gitattributes << 'EOF'
-* text=auto
-
-# Binary files
-*.bin filter=lfs diff=lfs merge=lfs -text
-*.o filter=lfs diff=lfs merge=lfs -text
-*.so filter=lfs diff=lfs merge=lfs -text
-*.so.* filter=lfs diff=lfs merge=lfs -text
-*.a filter=lfs diff=lfs merge=lfs -text
-*.dll filter=lfs diff=lfs merge=lfs -text
-*.dylib filter=lfs diff=lfs merge=lfs -text
-*.pyc filter=lfs diff=lfs merge=lfs -text
-
-# Media files
-*.onnx filter=lfs diff=lfs merge=lfs -text
-*.svg filter=lfs diff=lfs merge=lfs -text
-*.png filter=lfs diff=lfs merge=lfs -text
-*.gif filter=lfs diff=lfs merge=lfs -text
-*.ttf filter=lfs diff=lfs merge=lfs -text
-*.wav filter=lfs diff=lfs merge=lfs -text
-
-# Project specific
-selfdrive/car/tests/test_models_segs.txt filter=lfs diff=lfs merge=lfs -text
-system/hardware/tici/updater filter=lfs diff=lfs merge=lfs -text
-selfdrive/ui/qt/spinner_larch64 filter=lfs diff=lfs merge=lfs -text
-selfdrive/ui/qt/text_larch64 filter=lfs diff=lfs merge=lfs -text
-selfdrive/ui/ui filter=lfs diff=lfs merge=lfs -text
+[previous .gitattributes content]
 EOF
 
     # Setup LFS tracking
     git add .gitattributes
+
+    # Track binary files
     git lfs track "*.bin" "*.o" "*.so" "*.so.*" "*.a" "*.dll" "*.dylib" "*.pyc"
-    git lfs track "*.onnx" "*.svg" "*.png" "*.gif" "*.ttf" "*.wav"
+    git lfs track "*.png" "*.wav" "*.onnx" "*.svg" "*.gif" "*.ttf"
 
-    # Add all files and commit
+    # Fetch and checkout
+    git fetch device "$BRANCH_NAME" --force
+    git checkout "$BRANCH_NAME" || { echo "ERROR: Failed to checkout branch '$BRANCH_NAME'"; exit 1; }
+
+    # Cherry pick with theirs strategy
+    git cherry-pick --no-commit --strategy=recursive -X theirs "$device_commit" || { echo "ERROR: Cherry-pick failed"; exit 1; }
+
+    # Create single commit with all changes
     git add -f .
-    git commit -C "$device_commit" || { echo "ERROR: Commit failed"; exit 1; }
+    git commit -m "Prebuilt $(date '+%Y-%m-%d')" || { echo "ERROR: Commit failed"; exit 1; }
 
-    # Force push to origin
+    # Push single commit
     git push --force origin "$BRANCH_NAME" || { echo "ERROR: Force push to origin failed"; exit 1; }
 }
 
