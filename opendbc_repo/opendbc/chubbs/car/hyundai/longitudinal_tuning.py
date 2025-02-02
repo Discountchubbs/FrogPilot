@@ -20,11 +20,11 @@ class LongitudinalMode(str, Enum):
 
 @dataclass
 class TuningConstants:
-    MODE_TRANSITION_DURATION: float = 2.0
-    DISTANCE_TO_STOP_THRESHOLD: float = 3.0
     BRAKE_ONSET_DISTANCE: float = 25.0
-    BRAKE_DISTANCE_SCALE: float = 1.25
-    BRAKE_START_SPEED: float = 0.8
+    MODE_TRANSITION_DURATION: float = 3.5
+    DISTANCE_TO_STOP_THRESHOLD: float = 4.0
+    BRAKE_DISTANCE_SCALE: float = 1.15
+    BRAKE_START_SPEED: float = 1.0
 
 RADAR_TRACKS = ['radarState', 'modelV2']
 LongCtrlState = car.CarControl.Actuators.LongControlState
@@ -102,6 +102,8 @@ class HKGLongitudinalTuning:
     """Update longitudinal control."""
     if mode != self.current_mode:
       self.set_mode(mode)
+      if self.current_mode == LongitudinalMode.E2E and accel < 0:
+        accel = accel * 0.6
 
     # Get lead distance and accel limits
     lead_distance = self._get_lead_distance()
@@ -117,41 +119,52 @@ class HKGLongitudinalTuning:
 
       lead_distance = max(lead_distance, min_stopping_distance)
 
-    # Determine brake factor based on lead distance
+    # Gentler brake factor calculation
     brake_factor = 1.0
     if lead_distance < self.config.BRAKE_ONSET_DISTANCE:
       brake_factor = np.interp(lead_distance,
                               [self.config.DISTANCE_TO_STOP_THRESHOLD, self.config.BRAKE_ONSET_DISTANCE],
-                              [0.5, 1.0])
+                              [0.65, 1.0])
 
-    # Additional brake smoothing when brake is pressed or at low speeds
+    # More gentle brake smoothing
     if CS.out.brakePressed or CS.out.vEgo < self.config.BRAKE_START_SPEED:
-      brake_factor *= 0.85
+      brake_factor *= 0.9  # Was 0.85
 
     # Apply brake smoothing to negative accelerations
     if accel < 0:
       accel *= brake_factor
 
-    # Blend during ACC/E2E transitions
     blend = self.get_mode_blend_factor()
-    if self.current_mode == LongitudinalMode.E2E:
-      # Softer initial control for E2E
-      accel *= np.interp(blend, [0.0, 1.0], [0.7, 1.0])
-    accel_delta = accel - self.accel_last
-    brake_aggressiveness = 0.0
-    ramp_rate = 0.7
+    if self.current_mode == LongitudinalMode.E2E and accel < 0:
+      accel *= np.interp(blend, [0.0, 0.3, 0.7, 1.0], [0.65, 0.75, 0.85, 1.0])
 
+    accel_delta = accel - self.accel_last
+    
+    # Special handling for transitions into braking
     if accel < 0:
       brake_ratio = clip(abs(accel / CarControllerParams.ACCEL_MIN), 0.0, 1.0)
-      brake_aggressiveness = brake_ratio ** 1.5
+      brake_aggressiveness = brake_ratio ** 2.0  # Gentler curve
+      
+      if self.accel_last >= 0:
+        accel *= 0.8
+        self.brake_ramp = 0.0
+
       ramp_rate = interp(brake_aggressiveness,
                         [0.0, 0.2, 0.4, 0.6, 0.8, 1.0],
-                        [0.2, 0.3, 0.4, 0.6, 0.9, 1.2])
+                        [0.15, 0.25, 0.35, 0.45, 0.6, 0.8])
+
+    # Reduce brake aggressiveness
+    if accel < 0:
+      brake_ratio = clip(abs(accel / CarControllerParams.ACCEL_MIN), 0.0, 1.0)
+      brake_aggressiveness = brake_ratio ** 2.0
+      ramp_rate = interp(brake_aggressiveness,
+                        [0.0, 0.2, 0.4, 0.6, 0.8, 1.0],
+                        [0.15, 0.25, 0.35, 0.45, 0.6, 0.8])
 
       if brake_ratio > 0.8:
             ramp_rate *= 0.8
 
-      if self.accel_last >= 0:  # Transitioning into braking
+      if self.accel_last >= 0:
         self.brake_ramp = 0.0
         ramp_rate *= 0.5
 
@@ -195,7 +208,7 @@ class HKGLongitudinalTuning:
     """Apply base tuning parameters to CarParams."""
     CP.vEgoStopping = 0.3
     CP.vEgoStarting = 0.1
-    CP.stoppingDecelRate = 0.01 if self.enable_radar_tracks else 0.05
+    CP.stoppingDecelRate = 0.01
     CP.startAccel = 1.0 if bool(CP.flags & (HyundaiFlags.HYBRID | HyundaiFlags.EV)) else 1.6
     CP.startingState = False if bool(CP.flags & (HyundaiFlags.HYBRID | HyundaiFlags.EV)) else True
 
