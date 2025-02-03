@@ -731,7 +731,6 @@ class Controls:
     self.always_on_lateral_active &= ((self.frogpilot_toggles.always_on_lateral_lkas) and self.sm['frogpilotCarState'].alwaysOnLateralEnabled) or \
                                      ((self.frogpilot_toggles.always_on_lateral_main) and CS.cruiseState.available)
     self.always_on_lateral_active &= not (CS.brakePressed and CS.vEgo < self.frogpilot_toggles.always_on_lateral_pause_speed) or CS.standstill
-    self.always_on_lateral_active = bool(self.always_on_lateral_active)
 
     if self.frogpilot_toggles.conditional_experimental_mode or self.frogpilot_toggles.slc_fallback_experimental_mode:
       self.experimental_mode = self.sm['frogpilotPlan'].experimentalMode

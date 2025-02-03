@@ -197,7 +197,7 @@ FrogPilotVehiclesPanel::FrogPilotVehiclesPanel(FrogPilotSettingsWindow *parent) 
     } else if (param == "ToyotaDoors") {
       std::vector<QString> lockToggles{"LockDoors", "UnlockDoors"};
       std::vector<QString> lockToggleNames{tr("Lock"), tr("Unlock")};
-      vehicleToggle = new FrogPilotButtonToggleControl(param, title, desc, lockToggles, lockToggleNames);
+      vehicleToggle = new FrogPilotButtonToggleControl(param, title, desc, icon, lockToggles, lockToggleNames);
     } else if (param == "ClusterOffset") {
       std::vector<QString> clusterOffsetButton{"Reset"};
       FrogPilotParamValueButtonControl *clusterOffsetToggle = new FrogPilotParamValueButtonControl(param, title, desc, icon, 1.000, 1.050, "x", std::map<int, QString>(), 0.001, {}, clusterOffsetButton, false, false);

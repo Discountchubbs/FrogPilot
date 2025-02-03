@@ -723,12 +723,14 @@ void AnnotatedCameraWidget::drawLead(QPainter &painter, const cereal::RadarState
   painter.save();
 
   const float speedBuff = 10.;
-  const float leadBuff = adjacent ? 100. : 40.;
+  const float leadBuff = 40.;
   const float d_rel = lead_data.getDRel() + (adjacent ? fabs(lead_data.getYRel()) : 0);
   const float v_rel = lead_data.getVRel();
 
   float fillAlpha = 0;
-  if (d_rel < leadBuff) {
+  if (adjacent) {
+    fillAlpha = 255;
+  } else if (d_rel < leadBuff) {
     fillAlpha = 255 * (1.0 - (d_rel / leadBuff));
     if (v_rel < 0) {
       fillAlpha += 255 * (-1 * (v_rel / speedBuff));
@@ -788,12 +790,16 @@ void AnnotatedCameraWidget::drawLead(QPainter &painter, const cereal::RadarState
     int text_y = chevron[0].y() + textHeight + 5;
 
     if (!adjacent) {
-      lead_x = x + text_x + textWidth;
-      lead_y = y + text_y + textHeight;
-    }
+      int xMargin = textWidth * 0.25;
+      int yMargin = textHeight * 0.25;
 
-    if (!adjacent || fabs((x + text_x + textWidth) - lead_x) >= textWidth * 1.25 || fabs((y + text_y + textHeight) - lead_y) >= textHeight * 2) {
+      leadTextRect = QRect(text_x, text_y - textHeight, textWidth, textHeight).adjusted(-xMargin, -yMargin, xMargin, yMargin);
       painter.drawText(text_x, text_y, text);
+    } else {
+      QRect adjacentTextRect(text_x, text_y - textHeight, textWidth, textHeight);
+      if (!adjacentTextRect.intersects(leadTextRect)) {
+        painter.drawText(text_x, text_y, text);
+      }
     }
   }
 
@@ -878,8 +884,7 @@ void AnnotatedCameraWidget::paintEvent(QPaintEvent *event) {
       } else if (lead_one.getStatus()) {
         drawLead(painter, lead_one, s->scene.lead_vertices[0], v_ego, s->scene.lead_marker_color);
       } else {
-        lead_x = 0;
-        lead_y = 0;
+        leadTextRect = QRect();
       }
       if (lead_left.getStatus()) {
         drawLead(painter, lead_left, s->scene.lead_vertices[2], v_ego, blueColor(), true);
