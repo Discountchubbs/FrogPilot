@@ -109,10 +109,10 @@ def fill_model_msg(base_msg: capnp._DynamicStructBuilder, extended_msg: capnp._D
 
   # temporal pose
   temporal_pose = modelV2.temporalPose
-  temporal_pose.trans = net_output_data['plan'][0,0,Plan.VELOCITY].tolist()
-  temporal_pose.transStd = net_output_data['plan_stds'][0,0,Plan.VELOCITY].tolist()
-  temporal_pose.rot = net_output_data['plan'][0,0,Plan.ORIENTATION_RATE].tolist()
-  temporal_pose.rotStd = net_output_data['plan_stds'][0,0,Plan.ORIENTATION_RATE].tolist()
+  temporal_pose.trans = net_output_data['sim_pose'][0,:ModelConstants.POSE_WIDTH//2].tolist()
+  temporal_pose.transStd = net_output_data['sim_pose_stds'][0,:ModelConstants.POSE_WIDTH//2].tolist()
+  temporal_pose.rot = net_output_data['sim_pose'][0,ModelConstants.POSE_WIDTH//2:].tolist()
+  temporal_pose.rotStd = net_output_data['sim_pose_stds'][0,ModelConstants.POSE_WIDTH//2:].tolist()
 
   # poly path
   poly_path = driving_model_data.path
@@ -143,31 +143,30 @@ def fill_model_msg(base_msg: capnp._DynamicStructBuilder, extended_msg: capnp._D
 
   # lane lines
   modelV2.init('laneLines', 6)
+  lane_probs = net_output_data['lane_lines_prob'][0,1::2].tolist()
   for i in range(6):
     lane_line = modelV2.laneLines[i]
     if i < 4:
       fill_xyzt(lane_line, PLAN_T_IDXS, np.array(ModelConstants.X_IDXS), net_output_data['lane_lines'][0,i,:,0], net_output_data['lane_lines'][0,i,:,1])
-    else:
-      far_lane, near_lane, road_edge = (0, 1, 0) if i == 4 else (3, 2, 1)
-
-      near_lane_y = net_output_data['lane_lines'][0,near_lane,:,0]
-      road_edge_y = net_output_data['road_edges'][0,road_edge,:,0]
-      far_lane_y = net_output_data['lane_lines'][0,far_lane,:,0]
-
-      road_edge_distance = abs(np.linalg.norm(road_edge_y - near_lane_y))
-      far_lane_distance = abs(np.linalg.norm(far_lane_y - near_lane_y))
-
-      if road_edge_distance < far_lane_distance:
-        closest_lane_y = road_edge_y
+    elif i == 4:
+      if lane_probs[0] > 0:
+        leftLane_x = 0.5 * (net_output_data['lane_lines'][0,0,:,0] + net_output_data['lane_lines'][0,1,:,0])
+        leftLane_y = 0.5 * (net_output_data['lane_lines'][0,0,:,1] + net_output_data['lane_lines'][0,1,:,1])
+        fill_xyzt(lane_line, PLAN_T_IDXS, np.array(ModelConstants.X_IDXS), leftLane_x, leftLane_y)
       else:
-        closest_lane_y = far_lane_y
-
-      diff_y = closest_lane_y - near_lane_y
-      new_lane_y = near_lane_y + diff_y / 2
-
-      fill_xyzt(lane_line, PLAN_T_IDXS, np.array(ModelConstants.X_IDXS), new_lane_y, net_output_data['lane_lines'][0,near_lane,:,1])
+        fill_xyzt(lane_line, PLAN_T_IDXS, np.empty((0,)), np.empty((0,)), np.empty((0,)))
+    elif i == 5:
+      if lane_probs[3] > 0:
+        rightLane_x = 0.5 * (net_output_data['lane_lines'][0,2,:,0] + net_output_data['lane_lines'][0,3,:,0])
+        rightLane_y = 0.5 * (net_output_data['lane_lines'][0,2,:,1] + net_output_data['lane_lines'][0,3,:,1])
+        fill_xyzt(lane_line, PLAN_T_IDXS, np.array(ModelConstants.X_IDXS), rightLane_x, rightLane_y)
+      else:
+        fill_xyzt(lane_line, PLAN_T_IDXS, np.empty((0,)), np.empty((0,)), np.empty((0,)))
   modelV2.laneLineStds = net_output_data['lane_lines_stds'][0,:,0,0].tolist()
-  modelV2.laneLineProbs = net_output_data['lane_lines_prob'][0,1::2].tolist()
+  modelV2.laneLineProbs = lane_probs
+
+  lane_line_meta = driving_model_data.laneLineMeta
+  fill_lane_line_meta(lane_line_meta, modelV2.laneLines, modelV2.laneLineProbs)
 
   lane_line_meta = driving_model_data.laneLineMeta
   fill_lane_line_meta(lane_line_meta, modelV2.laneLines, modelV2.laneLineProbs)

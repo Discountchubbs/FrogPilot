@@ -29,6 +29,7 @@ import traceback
 import openpilot.selfdrive.frogpilot.fleetmanager.helpers as fleet
 
 from flask import Flask, Response, jsonify, redirect, render_template, request, send_from_directory, session, url_for
+from pathlib import Path
 from requests.exceptions import ConnectionError
 
 from openpilot.common.realtime import set_core_affinity
@@ -163,63 +164,60 @@ def error_logs():
 
 @app.route("/error_logs/<file_name>")
 def open_error_log(file_name):
-  f = open(fleet.ERROR_LOGS_PATH + file_name)
+  f = open(Path(fleet.ERROR_LOGS_PATH) / file_name)
   error = f.read()
   return render_template("error_log.html", file_name=file_name, file_content=error)
 
 @app.route("/addr_input", methods=['GET', 'POST'])
 def addr_input():
   preload = fleet.preload_favs()
-  SearchInput = fleet.get_SearchInput()
+  search_input = fleet.get_search_input()
   token = fleet.get_public_token()
-  s_token = fleet.get_app_token()
-  gmap_key = fleet.get_gmap_key()
-  lon = float(0.0)
-  lat = float(0.0)
+
+  lon = 0.0
+  lat = 0.0
+
   if request.method == 'POST':
-    valid_addr = False
     postvars = request.form.to_dict()
+    valid_addr = False
     addr, lon, lat, valid_addr, token = fleet.parse_addr(postvars, lon, lat, valid_addr, token)
+
     if not valid_addr:
-      # If address is not found, try searching
-      postvars = request.form.to_dict()
       addr = request.form.get('addr_val')
       addr, lon, lat, valid_addr, token = fleet.search_addr(postvars, lon, lat, valid_addr, token)
+
     if valid_addr:
-      # If a valid address is found, redirect to nav_confirmation
       return redirect(url_for('nav_confirmation', addr=addr, lon=lon, lat=lat))
-    else:
-      return render_template("error.html")
-  elif has_prime():
+    return render_template("error.html")
+
+  if has_prime():
     return render_template("prime.html")
-  # amap stuff
-  elif SearchInput == 1:
-    amap_key, amap_key_2 = fleet.get_amap_key()
-    if amap_key == "" or amap_key is None or amap_key_2 == "" or amap_key_2 is None:
-      return redirect(url_for('amap_key_input'))
-    elif token == "" or token is None:
+
+  if search_input == 0:
+    if fleet.get_public_token() is None:
       return redirect(url_for('public_token_input'))
-    elif s_token == "" or s_token is None:
+
+    if fleet.get_secret_token() is None:
       return redirect(url_for('app_token_input'))
-    else:
-      return redirect(url_for('amap_addr_input'))
-  elif fleet.get_nav_active():
-    if SearchInput == 2:
-      return render_template("nonprime.html", gmap_key=gmap_key, lon=lon, lat=lat, home=preload[0], work=preload[1], fav1=preload[2], fav2=preload[3], fav3=preload[4])
-    else:
-      return render_template("nonprime.html", gmap_key=None, lon=None, lat=None, home=preload[0], work=preload[1], fav1=preload[2], fav2=preload[3], fav3=preload[4])
-  elif token == "" or token is None:
-    return redirect(url_for('public_token_input'))
-  elif s_token == "" or s_token is None:
-    return redirect(url_for('app_token_input'))
-  elif SearchInput == 2:
+
+  if search_input == 1:
+    amap_key, amap_key_2 = fleet.get_amap_key()
+    if not amap_key or not amap_key_2:
+      return redirect(url_for('amap_key_input'))
+    return redirect(url_for('amap_addr_input'))
+
+  if search_input == 2:
+    gmap_key = fleet.get_gmap_key()
     lon, lat = fleet.get_last_lon_lat()
-    if gmap_key == "" or gmap_key is None:
+
+    if not gmap_key:
       return redirect(url_for('gmap_key_input'))
-    else:
-      return render_template("addr.html", gmap_key=gmap_key, lon=lon, lat=lat, home=preload[0], work=preload[1], fav1=preload[2], fav2=preload[3], fav3=preload[4])
-  else:
-      return render_template("addr.html", gmap_key=None, lon=None, lat=None, home=preload[0], work=preload[1], fav1=preload[2], fav2=preload[3], fav3=preload[4])
+    return render_template("addr.html", gmap_key=gmap_key, lon=lon, lat=lat, home=preload[0], work=preload[1], fav1=preload[2], fav2=preload[3], fav3=preload[4])
+
+  if fleet.get_nav_active():
+    return render_template("nonprime.html", gmap_key=None, lon=None, lat=None, home=preload[0], work=preload[1], fav1=preload[2], fav2=preload[3], fav3=preload[4])
+
+  return render_template("addr.html", gmap_key=None, lon=None, lat=None, home=preload[0], work=preload[1], fav1=preload[2], fav2=preload[3], fav3=preload[4])
 
 @app.route("/nav_confirmation", methods=['GET', 'POST'])
 def nav_confirmation():
@@ -327,6 +325,14 @@ def get_toggle_values_route():
   toggle_values = fleet.get_all_toggle_values()
   return jsonify(toggle_values)
 
+@app.route("/reset_toggle_values", methods=['POST'])
+def reset_toggle_values_route():
+  try:
+    fleet.reset_toggle_values()
+    return jsonify({"message": "Toggles reset successfully! Rebooting..."}), 200
+  except Exception as error:
+    return jsonify({"error": "Failed to reset toggles...", "details": str(error)}), 400
+
 @app.route("/store_toggle_values", methods=['POST'])
 def store_toggle_values_route():
   try:
@@ -351,6 +357,14 @@ def unlock_doors_route():
     return jsonify({"message": "Doors unlocked successfully!"}), 200
   except Exception as error:
     return jsonify({"error": "Failed to unlock doors...", "details": str(error)}), 400
+
+@app.route("/reboot_device", methods=['POST'])
+def reboot_device_route():
+  try:
+    fleet.reboot_device()
+    return jsonify({"message": "Successfully rebooted!"}), 200
+  except Exception as error:
+    return jsonify({"error": "Failed to reboot...", "details": str(error)}), 400
 
 def main():
   try:

@@ -12,14 +12,14 @@ void FrogPilotPrimelessPanel::createMapboxKeyControl(ButtonControl *&control, co
       if (key.length() >= 80) {
         params.put(paramKey, key.toStdString());
       } else {
-        FrogPilotConfirmationDialog::toggleAlert(tr("Inputted key is invalid or too short!"), tr("Okay"), this);
+        FrogPilotConfirmationDialog::toggleAlert(tr("Inputted key is invalid or too short!"), tr("Ok"), this);
       }
     } else {
       if (FrogPilotConfirmationDialog::yesorno(tr("Are you sure you want to remove your %1?").arg(label), this)) {
         control->setText(tr("ADD"));
 
         params.put(paramKey, "0");
-        paramsStorage.put(paramKey, "0");
+        params_storage.put(paramKey, "0");
 
         setupCompleted = false;
       }
@@ -66,14 +66,14 @@ FrogPilotPrimelessPanel::FrogPilotPrimelessPanel(FrogPilotSettingsWindow *parent
       if (key.length() >= 39) {
         params.put("AMapKey1", key.toStdString());
       } else {
-        FrogPilotConfirmationDialog::toggleAlert(tr("Inputted key is invalid or too short!"), tr("Okay"), this);
+        FrogPilotConfirmationDialog::toggleAlert(tr("Inputted key is invalid or too short!"), tr("Ok"), this);
       }
     } else {
       if (FrogPilotConfirmationDialog::yesorno(tr("Are you sure you want to remove your Amap key?"), this)) {
         amapKeyControl1->setText(tr("ADD"));
 
         params.put("AMapKey1", "0");
-        paramsStorage.put("AMapKey1", "0");
+        params_storage.put("AMapKey1", "0");
       }
     }
   });
@@ -88,14 +88,14 @@ FrogPilotPrimelessPanel::FrogPilotPrimelessPanel(FrogPilotSettingsWindow *parent
       if (key.length() >= 39) {
         params.put("AMapKey2", key.toStdString());
       } else {
-        FrogPilotConfirmationDialog::toggleAlert(tr("Inputted key is invalid or too short!"), tr("Okay"), this);
+        FrogPilotConfirmationDialog::toggleAlert(tr("Inputted key is invalid or too short!"), tr("Ok"), this);
       }
     } else {
       if (FrogPilotConfirmationDialog::yesorno(tr("Are you sure you want to remove your Amap key?"), this)) {
         amapKeyControl2->setText(tr("ADD"));
 
         params.put("AMapKey2", "0");
-        paramsStorage.put("AMapKey2", "0");
+        params_storage.put("AMapKey2", "0");
       }
     }
   });
@@ -110,14 +110,14 @@ FrogPilotPrimelessPanel::FrogPilotPrimelessPanel(FrogPilotSettingsWindow *parent
       if (key.length() >= 25) {
         params.put("GMapKey", key.toStdString());
       } else {
-        FrogPilotConfirmationDialog::toggleAlert(tr("Inputted key is invalid or too short!"), tr("Okay"), this);
+        FrogPilotConfirmationDialog::toggleAlert(tr("Inputted key is invalid or too short!"), tr("Ok"), this);
       }
     } else {
       if (FrogPilotConfirmationDialog::yesorno(tr("Are you sure you want to remove your Google Maps key?"), this)) {
         googleKeyControl->setText(tr("ADD"));
 
         params.put("GMapKey", "0");
-        paramsStorage.put("GMapKey", "0");
+        params_storage.put("GMapKey", "0");
       }
     }
   });

@@ -1,4 +1,5 @@
 import math
+import numpy as np
 
 from cereal import car
 from openpilot.common.filter_simple import FirstOrderFilter
@@ -27,6 +28,7 @@ ACCELERATION_DUE_TO_GRAVITY = 9.81  # m/s^2
 # the down limit roughly matches the rate of ACCEL_NET, reducing PCM compensation windup
 ACCEL_WINDUP_LIMIT = 4.0 * DT_CTRL * 3  # m/s^2 / frame
 ACCEL_WINDDOWN_LIMIT = -4.0 * DT_CTRL * 3  # m/s^2 / frame
+ACCEL_PID_UNWIND = 0.03 * DT_CTRL * 3  # m/s^2 / frame
 
 # LKA limits
 # EPS faults if you apply torque while the steering rate is above 100 deg/s for too long
@@ -48,8 +50,8 @@ UNLOCK_CMD = b"\x40\x05\x30\x11\x00\x40\x00\x00"
 PARK = car.CarState.GearShifter.park
 
 def get_long_tune(CP, params):
-  kiBP = [0.]
-  kiV = [0.25]
+  kiBP = [2., 5.]
+  kiV = [0.5, 0.25]
 
   return PIDController(0.0, (kiBP, kiV), k_f=1.0,
                        pos_limit=params.ACCEL_MAX, neg_limit=params.ACCEL_MIN,
@@ -91,33 +93,17 @@ class CarController(CarControllerBase):
 
     self.doors_locked = False
     self.reverse_cruise_active = False
-    self.updated_pid = False
 
     self.cruise_timer = 0
     self.previous_set_speed = 0
 
   def update(self, CC, CS, now_nanos, frogpilot_toggles):
     if frogpilot_toggles.sport_plus:
-      if not self.updated_pid:
-        self.params.ACCEL_MAX = get_max_allowed_accel(0)
-        self.long_pid = get_long_tune(self.CP, self.params, frogpilot_toggles)
-        self.updated_pid = True
-
       self.params.ACCEL_MAX = min(frogpilot_toggles.max_desired_acceleration, get_max_allowed_accel(CS.out.vEgo))
-    elif frogpilot_toggles.frogsgomoo_tweak:
-      if not self.updated_pid:
-        self.params.ACCEL_MAX = self.stock_max_accel
-        self.long_pid = get_long_tune(self.CP, self.params, frogpilot_toggles)
-        self.updated_pid = True
-
-      self.params.ACCEL_MAX = min(frogpilot_toggles.max_desired_acceleration, self.stock_max_accel)
+      self.long_pid.pos_limit = self.params.ACCEL_MAX
     else:
-      if self.updated_pid:
-        self.params.ACCEL_MAX = self.stock_max_accel
-        self.long_pid = get_long_tune(self.CP, self.params)
-        self.updated_pid = False
-
       self.params.ACCEL_MAX = min(frogpilot_toggles.max_desired_acceleration, self.stock_max_accel)
+      self.long_pid.pos_limit = self.params.ACCEL_MAX
 
     actuators = CC.actuators
     stopping = actuators.longControlState == LongCtrlState.stopping
@@ -263,8 +249,9 @@ class CarController(CarControllerBase):
           pcm_accel_cmd = rate_limit(pcm_accel_cmd, self.prev_accel, ACCEL_WINDDOWN_LIMIT, ACCEL_WINDUP_LIMIT)
         self.prev_accel = pcm_accel_cmd
 
-        # calculate amount of acceleration PCM should apply to reach target, given pitch
-        accel_due_to_pitch = math.sin(self.pitch.x) * ACCELERATION_DUE_TO_GRAVITY
+        # calculate amount of acceleration PCM should apply to reach target, given pitch.
+        # clipped to only include downhill angles, avoids erroneously unsetting PERMIT_BRAKING when stopping on uphills
+        accel_due_to_pitch = math.sin(min(self.pitch.x, 0.0)) * ACCELERATION_DUE_TO_GRAVITY
         # TODO: on uphills this sometimes sets PERMIT_BRAKING low not considering the creep force
         net_acceleration_request = pcm_accel_cmd + accel_due_to_pitch
 
@@ -278,30 +265,31 @@ class CarController(CarControllerBase):
         prev_aego = self.aego.x
         self.aego.update(a_ego_blended)
         j_ego = (self.aego.x - prev_aego) / (DT_CTRL * 3)
-        a_ego_future = a_ego_blended + j_ego * 0.5
 
-        if actuators.longControlState == LongCtrlState.pid:
+        future_t = float(np.interp(CS.out.vEgo, [2., 5.], [0.25, 0.5]))
+        a_ego_future = a_ego_blended + j_ego * future_t
+
+        if CC.longActive:
+          # constantly slowly unwind integral to recover from large temporary errors
+          self.long_pid.i -= ACCEL_PID_UNWIND * float(np.sign(self.long_pid.i))
+
           error_future = pcm_accel_cmd - a_ego_future
           pcm_accel_cmd = self.long_pid.update(error_future,
                                                speed=CS.out.vEgo,
-                                               feedforward=pcm_accel_cmd)
+                                               feedforward=pcm_accel_cmd,
+                                               freeze_integrator=actuators.longControlState != LongCtrlState.pid)
         else:
           self.long_pid.reset()
 
         # Along with rate limiting positive jerk above, this greatly improves gas response time
         # Consider the net acceleration request that the PCM should be applying (pitch included)
         net_acceleration_request_min = min(actuators.accel + accel_due_to_pitch, net_acceleration_request)
-        if frogpilot_toggles.frogsgomoo_tweak and net_acceleration_request_min > 0 and not (stopping or not CC.longActive or self.CP.enableGasInterceptor):
-          self.permit_braking = False
-        elif net_acceleration_request_min < 0.2 or stopping or not CC.longActive or self.CP.enableGasInterceptor:
+        if net_acceleration_request_min < 0.2 or stopping or not CC.longActive:
           self.permit_braking = True
         elif net_acceleration_request_min > 0.3:
           self.permit_braking = False
 
-        if self.CP.enableGasInterceptor:
-          pcm_accel_cmd = clip(actuators.accel, self.params.ACCEL_MIN, self.params.ACCEL_MAX)
-        else:
-          pcm_accel_cmd = clip(pcm_accel_cmd, self.params.ACCEL_MIN, self.params.ACCEL_MAX)
+        pcm_accel_cmd = clip(pcm_accel_cmd, self.params.ACCEL_MIN, self.params.ACCEL_MAX)
 
         can_sends.append(toyotacan.create_accel_command(self.packer, pcm_accel_cmd, pcm_cancel_cmd, self.permit_braking, self.standstill_req, lead,
                                                         CS.acc_type, fcw_alert, self.distance_button, self.reverse_cruise_active))

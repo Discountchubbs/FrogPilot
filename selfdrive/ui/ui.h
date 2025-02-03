@@ -123,25 +123,9 @@ typedef struct UIScene {
   uint64_t started_frame;
 
   // FrogPilot variables
-  QColor lane_lines_color;
-  QColor lead_marker_color;
-  QColor path_color;
-  QColor path_edges_color;
-  QColor sidebar_color1;
-  QColor sidebar_color2;
-  QColor sidebar_color3;
-
-  QJsonObject frogpilot_toggles;
-
-  QPolygonF track_adjacent_vertices[6];
-  QPolygonF track_edge_vertices;
-
-  QString model_name;
-
   bool acceleration_path;
   bool adjacent_path;
   bool adjacent_path_metrics;
-  bool allow_auto_locking_doors;
   bool always_on_lateral;
   bool always_on_lateral_active;
   bool big_map;
@@ -260,6 +244,7 @@ typedef struct UIScene {
   float speed_limit_overridden_speed;
   float steer;
   float unconfirmed_speed_limit;
+  float upcoming_maneuver_distance;
   float upcoming_speed_limit;
   float vtsc_speed;
 
@@ -280,6 +265,22 @@ typedef struct UIScene {
   int tethering_config;
 
   std::string speed_limit_source;
+
+  QColor lane_lines_color;
+  QColor lead_marker_color;
+  QColor path_color;
+  QColor path_edges_color;
+  QColor sidebar_color1;
+  QColor sidebar_color2;
+  QColor sidebar_color3;
+
+  QJsonObject frogpilot_toggles;
+
+  QPolygonF track_adjacent_vertices[6];
+  QPolygonF track_edge_vertices;
+
+  QString model;
+  QString model_name;
 
 } UIScene;
 

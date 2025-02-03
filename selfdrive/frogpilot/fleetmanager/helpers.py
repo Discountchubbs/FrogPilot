@@ -35,7 +35,7 @@ from urllib.parse import quote
 
 from openpilot.common.params import ParamKeyType
 from openpilot.selfdrive.car.toyota.carcontroller import LOCK_CMD, UNLOCK_CMD
-from openpilot.system.hardware import PC
+from openpilot.system.hardware import HARDWARE, PC
 from openpilot.system.hardware.hw import Paths
 from openpilot.system.loggerd.uploader import listdir_by_creation
 from openpilot.system.loggerd.xattr_cache import getxattr
@@ -227,28 +227,24 @@ def get_nav_active():
     return False
 
 def get_amap_key():
-    token1 = params.get("AMapKey1", encoding='utf8')
-    token2 = params.get("AMapKey2", encoding='utf8')
-    return (
-        token1.strip() if token1 and token1 != "0" else None,
-        token2.strip() if token2 and token2 != "0" else None
-    )
+  token = params.get("AMapKey1", encoding='utf8')
+  token2 = params.get("AMapKey2", encoding='utf8')
+  return (token.strip() if token else None, token2.strip() if token2 else None)
 
 def get_gmap_key():
-    token = params.get("GMapKey", encoding='utf8')
-    return token.strip() if token and token != "0" else None
+  token = params.get("GMapKey", encoding='utf8')
+  return token.strip() if token else None
 
 def get_public_token():
-    token = params.get("MapboxPublicKey", encoding='utf8')
-    return token.strip() if token and token.startswith("pk") else None
+  token = params.get("MapboxPublicKey", encoding='utf8')
+  return token.strip() if token and token.startswith("pk") else None
 
-def get_app_token():
-    token = params.get("MapboxSecretKey", encoding='utf8')
-    return token.strip() if token and token.startswith("sk") else None
+def get_secret_token():
+  token = params.get("MapboxSecretKey", encoding='utf8')
+  return token.strip() if token and token.startswith("sk") else None
 
-def get_SearchInput():
-  SearchInput = params.get_int("SearchInput")
-  return SearchInput
+def get_search_input():
+  return params.get_int("SearchInput")
 
 def get_last_lon_lat():
   last_pos = params.get("LastGPSPosition")
@@ -321,8 +317,6 @@ def set_destination(postvars, valid_addr):
   else:
     addr = postvars.get("place_name")
     token = get_public_token()
-    lat = float(postvars.get("lat"))
-    lon = float(postvars.get("lon"))
     data, lon, lat, valid_addr, token = search_addr(addr, lon, lat, valid_addr, token)
     postvars["lat"] = lat
     postvars["lon"] = lon
@@ -474,6 +468,10 @@ def get_all_toggle_values():
 
   return encode_parameters(toggle_values)
 
+def reset_toggle_values():
+  params.put_bool("DoToggleReset", True)
+  HARDWARE.reboot()
+
 def store_toggle_values(request_data):
   excluded_keys = [
     "ApiCache_NavDestinations", "CalibrationParams", "CarParamsPersistent",
@@ -502,3 +500,6 @@ def unlock_doors():
   panda.can_send(0x750, UNLOCK_CMD, 0)
   panda.set_safety_mode(panda.SAFETY_TOYOTA)
   panda.send_heartbeat()
+
+def reboot_device():
+  HARDWARE.reboot()

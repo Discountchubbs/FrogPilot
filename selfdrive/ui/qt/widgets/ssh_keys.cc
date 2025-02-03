@@ -18,9 +18,9 @@ SshControl::SshControl() :
       }
     } else {
       params.remove("GithubUsername");
-      paramsStorage.remove("GithubUsername");
+      params_storage.remove("GithubUsername");
       params.remove("GithubSshKeys");
-      paramsStorage.remove("GithubSshKeys");
+      params_storage.remove("GithubSshKeys");
       refresh();
     }
   });

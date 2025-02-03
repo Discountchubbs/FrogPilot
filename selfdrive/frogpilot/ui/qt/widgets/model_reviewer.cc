@@ -113,8 +113,16 @@ QPushButton *ModelReview::createButton(const QString &text, const QString &type,
 }
 
 void ModelReview::showEvent(QShowEvent *event) {
-  currentModel = uiState()->scene.model_name;
-  currentModelFiltered = processModelName(currentModel);
+  QStringList availableModels = QString::fromStdString(params.get("AvailableModels")).split(",");
+  QStringList availableModelNames = QString::fromStdString(params.get("AvailableModelNames")).split(",");
+
+  QMap<QString, QString> modelFileToNameMap;
+  for (int i = 0; i < qMin(availableModels.size(), availableModelNames.size()); ++i) {
+    modelFileToNameMap.insert(availableModels[i], processModelName(availableModelNames[i]));
+  }
+
+  currentModel = uiState()->scene.model;
+  currentModelFiltered = modelFileToNameMap.value(currentModel);
 
   mainLayout->setCurrentIndex(modelRated ? 1 : 0);
 

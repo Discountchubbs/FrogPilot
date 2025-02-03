@@ -49,12 +49,12 @@ private:
   std::set<QString> standardPersonalityKeys = {"StandardFollow", "StandardJerkAcceleration", "StandardJerkDeceleration", "StandardJerkDanger", "StandardJerkSpeed", "StandardJerkSpeedDecrease", "ResetStandardPersonality"};
   std::set<QString> trafficPersonalityKeys = {"TrafficFollow", "TrafficJerkAcceleration", "TrafficJerkDeceleration", "TrafficJerkDanger", "TrafficJerkSpeed", "TrafficJerkSpeedDecrease", "ResetTrafficPersonality"};
 
-  FrogPilotButtonsControl *curveDetectionBtn;
+  FrogPilotButtonToggleControl *curveDetectionToggle;
 
   FrogPilotSettingsWindow *parent;
 
   QJsonObject frogpilotToggleLevels;
 
   Params params;
-  Params params_default{"/data/params_default"};
+  Params params_default{"/dev/shm/params_default"};
 };

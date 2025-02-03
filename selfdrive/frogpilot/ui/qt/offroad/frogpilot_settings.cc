@@ -39,6 +39,7 @@ void FrogPilotSettingsWindow::createPanelButtons(FrogPilotListWidget *list) {
   FrogPilotPrimelessPanel *frogpilotPrimelessPanel = new FrogPilotPrimelessPanel(this);
   FrogPilotSoundsPanel *frogpilotSoundsPanel = new FrogPilotSoundsPanel(this);
   FrogPilotThemesPanel *frogpilotThemesPanel = new FrogPilotThemesPanel(this);
+  FrogPilotVehiclesPanel *frogpilotVehiclesPanel = new FrogPilotVehiclesPanel(this);
   FrogPilotVisualsPanel *frogpilotVisualsPanel = new FrogPilotVisualsPanel(this);
 
   QObject::connect(frogpilotDevicePanel, &FrogPilotDevicePanel::openParentToggle, this, &FrogPilotSettingsWindow::openParentToggle);
@@ -52,6 +53,7 @@ void FrogPilotSettingsWindow::createPanelButtons(FrogPilotListWidget *list) {
   QObject::connect(frogpilotPrimelessPanel, &FrogPilotPrimelessPanel::openMapBoxInstructions, this, &FrogPilotSettingsWindow::openMapBoxInstructions);
   QObject::connect(frogpilotSoundsPanel, &FrogPilotSoundsPanel::openParentToggle, this, &FrogPilotSettingsWindow::openParentToggle);
   QObject::connect(frogpilotThemesPanel, &FrogPilotThemesPanel::openParentToggle, this, &FrogPilotSettingsWindow::openParentToggle);
+  QObject::connect(frogpilotVehiclesPanel, &FrogPilotVehiclesPanel::openParentToggle, this, &FrogPilotSettingsWindow::openParentToggle);
   QObject::connect(frogpilotVisualsPanel, &FrogPilotVisualsPanel::openParentToggle, this, &FrogPilotSettingsWindow::openParentToggle);
   QObject::connect(frogpilotVisualsPanel, &FrogPilotVisualsPanel::openSubParentToggle, this, &FrogPilotSettingsWindow::openSubParentToggle);
 
@@ -61,7 +63,7 @@ void FrogPilotSettingsWindow::createPanelButtons(FrogPilotListWidget *list) {
     {{tr("MAP DATA"), frogpilotMapsPanel}, {tr("PRIMELESS NAVIGATION"), frogpilotPrimelessPanel}},
     {{tr("DATA"), new FrogPilotDataPanel(this)}, {tr("DEVICE CONTROLS"), frogpilotDevicePanel}, {tr("UTILITIES"), new FrogPilotUtilitiesPanel(this)}},
     {{tr("APPEARANCE"), frogpilotVisualsPanel}, {tr("THEME"), frogpilotThemesPanel}},
-    {{tr("MANAGE"), new FrogPilotVehiclesPanel(this)}}
+    {{tr("MANAGE"), frogpilotVehiclesPanel}}
   };
 
   std::vector<std::tuple<QString, QString, QString>> panelInfo = {
@@ -126,11 +128,11 @@ FrogPilotSettingsWindow::FrogPilotSettingsWindow(SettingsWindow *parent) : QFram
 
   std::vector<QString> togglePresets{tr("Minimal"), tr("Standard"), tr("Advanced"), tr("Developer")};
   ButtonParamControl *togglePreset = new ButtonParamControl("TuningLevel", tr("Tuning Level"),
-                                     tr("Select the tuning level that best suits your needs. "
-                                     "'Minimal' is ideal for those who prefer simplicity and ease of use, "
-                                     "'Standard' is recommended for most users, offering a balanced experience, "
-                                     "'Advanced' provides more control for experienced users, "
-                                     "while 'Developer' unlocks highly customizable settings designed for seasoned enthusiasts."),
+                                     tr("Select a tuning level that suits your preferences:\n\n"
+                                     "Minimal - Ideal for those who prefer simplicity or ease of use\n"
+                                     "Standard - Recommended for most users for a balanced experience\n"
+                                     "Advanced - Unlocks fine-tuning controls for more experienced users\n"
+                                     "Developer - Unlocks highly customizable settings for seasoned enthusiasts"),
                                      "../frogpilot/assets/toggle_icons/icon_customization.png",
                                      togglePresets);
 
@@ -152,7 +154,7 @@ FrogPilotSettingsWindow::FrogPilotSettingsWindow(SettingsWindow *parent) : QFram
     if (id == 3) {
       FrogPilotConfirmationDialog::toggleAlert(
         tr("The 'Developer' preset is only available for users with either over 100 hours on FrogPilot, or 250 hours with openpilot."),
-        tr("Okay"), this
+        tr("Ok"), this
       );
     }
   });
@@ -218,7 +220,6 @@ void FrogPilotSettingsWindow::updateVariables() {
     isGM = carMake == "gm";
     isHKG = carMake == "hyundai";
     isHKGCanFd = isHKG && safetyModel == cereal::CarParams::SafetyModel::HYUNDAI_CANFD;
-    isImpreza = carFingerprint == "SUBARU_IMPREZA";
     isPIDCar = CP.getLateralTuning().which() == cereal::CarParams::LateralTuning::PID;
     isSubaru = carMake == "subaru";
     isToyota = carMake == "toyota";

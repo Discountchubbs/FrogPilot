@@ -577,11 +577,9 @@ class Controls:
     # Update Torque Params
     if self.CP.lateralTuning.which() == 'torque':
       torque_params = self.sm['liveTorqueParameters']
-      friction = torque_params.frictionCoefficientFiltered
-      lat_accel_factor = torque_params.latAccelFactorFiltered
       if self.sm.all_checks(['liveTorqueParameters']) and (torque_params.useParams or self.frogpilot_toggles.force_auto_tune):
-        self.LaC.update_live_torque_params(lat_accel_factor, torque_params.latAccelOffsetFiltered,
-                                           friction)
+        self.LaC.update_live_torque_params(torque_params.latAccelFactorFiltered, torque_params.latAccelOffsetFiltered,
+                                           torque_params.frictionCoefficientFiltered)
 
     long_plan = self.sm['longitudinalPlan']
     model_v2 = self.sm['modelV2']

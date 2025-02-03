@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 from openpilot.common.numpy_fast import clip, interp
 
-from openpilot.selfdrive.car.interfaces import ACCEL_MIN, ACCEL_MAX
 from openpilot.selfdrive.controls.lib.longitudinal_planner import A_CRUISE_MIN, get_max_accel
 
 from openpilot.selfdrive.frogpilot.frogpilot_variables import CITY_SPEED_LIMIT
@@ -40,7 +39,7 @@ class FrogPilotAcceleration:
     self.max_accel = 0
     self.min_accel = 0
 
-  def update(self, controlsState, frogpilotCarState, v_ego, frogpilot_toggles):
+  def update(self, frogpilotCarState, v_ego, frogpilot_toggles):
     eco_gear = frogpilotCarState.ecoGear
     sport_gear = frogpilotCarState.sportGear
 
@@ -61,8 +60,6 @@ class FrogPilotAcceleration:
         self.max_accel = get_max_accel_sport(v_ego)
       elif frogpilot_toggles.acceleration_profile == 3:
         self.max_accel = get_max_accel_sport_plus(v_ego)
-      elif controlsState.experimentalMode:
-        self.max_accel = ACCEL_MAX
       else:
         self.max_accel = get_max_accel(v_ego)
 
@@ -72,9 +69,7 @@ class FrogPilotAcceleration:
       self.max_accel = min(get_max_accel_low_speeds(self.max_accel, self.frogpilot_planner.v_cruise), self.max_accel)
       self.max_accel = min(get_max_accel_ramp_off(self.max_accel, self.frogpilot_planner.v_cruise, v_ego), self.max_accel)
 
-    if controlsState.experimentalMode:
-      self.min_accel = ACCEL_MIN
-    elif frogpilot_toggles.map_deceleration and (eco_gear or sport_gear):
+    if frogpilot_toggles.map_deceleration and (eco_gear or sport_gear):
       if eco_gear:
         self.min_accel = A_CRUISE_MIN_ECO
       else:

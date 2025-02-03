@@ -56,7 +56,7 @@ class FrogPilotPlanner:
     v_ego = max(carState.vEgo, 0)
     v_lead = self.lead_one.vLead
 
-    self.frogpilot_acceleration.update(controlsState, frogpilotCarState, v_ego, frogpilot_toggles)
+    self.frogpilot_acceleration.update(frogpilotCarState, v_ego, frogpilot_toggles)
 
     run_cem = frogpilot_toggles.conditional_experimental_mode or frogpilot_toggles.force_stops or frogpilot_toggles.green_light_alert or frogpilot_toggles.show_stopping_point
     if run_cem and (controlsState.enabled or frogpilotCarControl.alwaysOnLateralActive) and carState.gearShifter not in NON_DRIVING_GEARS:
@@ -93,7 +93,9 @@ class FrogPilotPlanner:
     following_lead = self.lead_one.status
     following_lead &= self.lead_one.dRel < self.model_length + STOP_DISTANCE
     following_lead &= not carState.standstill or self.tracking_lead
-    return self.tracking_lead_filter.update(1 if following_lead else 0) >= THRESHOLD**2
+
+    self.tracking_lead_filter.update(following_lead)
+    return self.tracking_lead_filter.x >= THRESHOLD**2
 
   def publish(self, sm, pm, toggles_updated):
     frogpilot_plan_send = messaging.new_message('frogpilotPlan')
