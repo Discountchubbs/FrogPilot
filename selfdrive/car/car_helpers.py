@@ -1,5 +1,4 @@
 import os
-import threading
 import time
 from collections.abc import Callable
 
@@ -12,7 +11,6 @@ from openpilot.selfdrive.car.fw_versions import get_fw_versions_ordered, get_pre
 from openpilot.selfdrive.car.mock.values import CAR as MOCK
 from openpilot.common.swaglog import cloudlog
 import cereal.messaging as messaging
-import openpilot.system.sentry as sentry
 from openpilot.selfdrive.car import gen_empty_fingerprint
 
 FRAME_FINGERPRINT = 100  # 1s
@@ -205,11 +203,6 @@ def get_car(logcan, sendcan, disable_openpilot_long, experimental_long_allowed, 
 
   if frogpilot_toggles.block_user:
     candidate = "MOCK"
-    threading.Thread(target=sentry.capture_fingerprint, args=(candidate, params, True,)).start()
-  elif candidate != "MOCK" and not params.get_bool("FingerprintLogged"):
-    threading.Thread(target=sentry.capture_fingerprint, args=(candidate, params,)).start()
-
-  threading.Thread(target=sentry.capture_model, args=(frogpilot_toggles,)).start()
 
   CarInterface, _, _ = interfaces[candidate]
   CP = CarInterface.get_params(candidate, fingerprints, car_fw, disable_openpilot_long, experimental_long_allowed, params, docs=False)
