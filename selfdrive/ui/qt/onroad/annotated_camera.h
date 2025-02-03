@@ -108,6 +108,8 @@ private:
 
   QPoint dmIconPosition;
 
+  QRect leadTextRect;
+
   QString leadDistanceUnit;
   QString leadSpeedUnit;
   QString signalStyle;
@@ -151,8 +153,6 @@ private:
   float dashboardSpeedLimit;
   float distanceConversion;
   float laneDetectionWidth;
-  float lead_x;
-  float lead_y;
   float mapsSpeedLimit;
   float mtscSpeed;
   float navigationSpeedLimit;
