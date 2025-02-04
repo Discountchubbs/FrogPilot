@@ -36,8 +36,8 @@ def manager_init() -> None:
 
   # FrogPilot variables
   setup_frogpilot(build_metadata)
-  params_storage = Params("/persist/params")
-  convert_params(params_storage)
+  params_cache = Params("/cache")
+  convert_params(params_cache)
 
   default_params: list[tuple[str, str | bytes]] = [
     ("AlwaysOnDM", "0"),
@@ -75,15 +75,15 @@ def manager_init() -> None:
   reset_toggles = params.get_bool("DoToggleReset")
   for k, v in default_params + [(k, v) for k, v, _ in frogpilot_default_params]:
     if params.get(k) is None or reset_toggles:
-      if params_storage.get(k) is None or reset_toggles:
+      if params_cache.get(k) is None or reset_toggles:
         params.put(k, v)
-        params_storage.remove(k)
+        params_cache.remove(k)
       else:
-        params.put(k, params_storage.get(k))
+        params.put(k, params_cache.get(k))
     else:
-      params_storage.put(k, params.get(k))
+      params_cache.put(k, params.get(k))
   params.remove("DoToggleReset")
-  frogpilot_boot_functions(build_metadata, params_storage)
+  frogpilot_boot_functions(build_metadata, params_cache)
 
   # Create folders needed for msgq
   try:

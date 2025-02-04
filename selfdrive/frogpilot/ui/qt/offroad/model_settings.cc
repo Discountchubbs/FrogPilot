@@ -70,7 +70,7 @@ FrogPilotModelPanel::FrogPilotModelPanel(FrogPilotSettingsWindow *parent) : Frog
         } else if (id == 2) {
           if (FrogPilotConfirmationDialog::yesorno(tr("Are you sure you want to remove all of your blacklisted models?"), this)) {
             params.remove("BlacklistedModels");
-            params_storage.remove("BlacklistedModels");
+            params_cache.remove("BlacklistedModels");
           }
         }
       });
@@ -80,7 +80,7 @@ FrogPilotModelPanel::FrogPilotModelPanel(FrogPilotSettingsWindow *parent) : Frog
       QObject::connect(resetScoresBtn, &ButtonControl::clicked, [this]() {
         if (FrogPilotConfirmationDialog::yesorno(tr("Are you sure you want to reset all of your model drives and scores?"), this)) {
           params.remove("ModelDrivesAndScores");
-          params_storage.remove("ModelDrivesAndScores");
+          params_cache.remove("ModelDrivesAndScores");
           updateModelLabels();
         }
       });

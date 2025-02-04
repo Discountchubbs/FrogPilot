@@ -168,9 +168,6 @@ def fill_model_msg(base_msg: capnp._DynamicStructBuilder, extended_msg: capnp._D
   lane_line_meta = driving_model_data.laneLineMeta
   fill_lane_line_meta(lane_line_meta, modelV2.laneLines, modelV2.laneLineProbs)
 
-  lane_line_meta = driving_model_data.laneLineMeta
-  fill_lane_line_meta(lane_line_meta, modelV2.laneLines, modelV2.laneLineProbs)
-
   # road edges
   modelV2.init('roadEdges', 2)
   for i in range(2):

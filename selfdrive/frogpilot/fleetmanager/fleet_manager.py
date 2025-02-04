@@ -342,6 +342,21 @@ def store_toggle_values_route():
   except Exception as error:
     return jsonify({"error": "Failed to update values", "details": str(error)}), 400
 
+@app.route("/capture_tmux_log", methods=['POST'])
+def capture_tmux_log_route():
+  try:
+    log_filename = fleet.capture_tmux_log()
+    return jsonify({"message": "Captured console log successfully!", "log_file": log_filename}), 200
+  except Exception as error:
+    return jsonify({"error": "Failed to capture the console log...", "details": str(error)}), 400
+
+@app.route("/download_tmux_log/<filename>", methods=['GET'])
+def download_tmux_log(filename):
+  try:
+    return send_from_directory(fleet.TMUX_LOGS_PATH, filename, as_attachment=True)
+  except Exception as error:
+    return jsonify({"error": "Failed to download the file...", "details": str(error)}), 400
+
 @app.route("/lock_doors", methods=['POST'])
 def lock_doors_route():
   try:

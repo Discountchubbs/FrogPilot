@@ -75,12 +75,12 @@ def backup_frogpilot(build_metadata):
     destination_directory = backup_path / f"{build_metadata.channel}_{build_metadata.openpilot.git_commit_date[12:-16]}_auto"
     backup_directory(directory, destination_directory, f"Successfully backed up FrogPilot to {destination_directory}", f"Failed to backup FrogPilot to {destination_directory}", minimum_backup_size, compressed=True)
 
-def backup_toggles(params_storage):
+def backup_toggles(params_cache):
   for key in params.all_keys():
     if params.get_key_type(key) & ParamKeyType.PERSISTENT:
       value = params.get(key)
       if value is not None:
-        params_storage.put(key, value)
+        params_cache.put(key, value)
 
   backup_path = Path("/data/toggle_backups")
   maximum_backups = 10
@@ -90,7 +90,7 @@ def backup_toggles(params_storage):
   destination_directory = backup_path / f"{datetime.datetime.now().strftime('%Y-%m-%d_%I-%M%p').lower()}_auto"
   backup_directory(directory, destination_directory, f"Successfully backed up toggles to {destination_directory}", f"Failed to backup toggles to {destination_directory}")
 
-def convert_params(params_storage):
+def convert_params(params_cache):
   print("Starting to convert params")
 
   def update_values(keys, mappings):
@@ -98,8 +98,8 @@ def convert_params(params_storage):
       for original, replacement in mappings.items():
         if params.get(key, encoding='utf-8') == original:
           params.put(key, replacement)
-        if params_storage.get(key, encoding='utf-8') == original:
-          params_storage.put(key, replacement)
+        if params_cache.get(key, encoding='utf-8') == original:
+          params_cache.put(key, replacement)
 
   priority_keys = ["SLCPriority1", "SLCPriority2", "SLCPriority3"]
   update_values(priority_keys, {"Offline Maps": "Map Data"})
@@ -140,17 +140,17 @@ def convert_params(params_storage):
       }
 
     params.remove(drives_param)
-    params_storage.remove(drives_param)
+    params_cache.remove(drives_param)
     params.remove(score_param)
-    params_storage.remove(score_param)
+    params_cache.remove(score_param)
 
   params.put("ModelDrivesAndScores", json.dumps(model_drives_and_scores))
 
   print("Param conversion completed")
 
-def frogpilot_boot_functions(build_metadata, params_storage):
+def frogpilot_boot_functions(build_metadata, params_cache):
   if params.get_bool("HasAcceptedTerms"):
-    params_storage.clear_all()
+    params_cache.clear_all()
 
   source = THEME_SAVE_PATH / "distance_icons"
   destination = THEME_SAVE_PATH / "theme_packs"
@@ -185,12 +185,14 @@ def frogpilot_boot_functions(build_metadata, params_storage):
     subprocess.run(["pkill", "-SIGUSR1", "-f", "system.updated.updated"], check=False)
 
     backup_frogpilot(build_metadata)
-    backup_toggles(params_storage)
+    backup_toggles(params_cache)
 
   threading.Thread(target=backup_thread, daemon=True).start()
 
 def setup_frogpilot(build_metadata):
+  run_cmd(["sudo", "mount", "-o", "remount,rw", "/"], "Successfully remounted / as read-write", "Failed to remount / as read-write")
   run_cmd(["sudo", "mount", "-o", "remount,rw", "/persist"], "Successfully remounted /persist as read-write", "Failed to remount /persist")
+  run_cmd(["sudo", "chmod", "0777", "/cache"], "Successfully updated /cache permissions", "Failed to update /cache permissions")
 
   Path(MODELS_PATH).mkdir(parents=True, exist_ok=True)
   Path(THEME_SAVE_PATH).mkdir(parents=True, exist_ok=True)
@@ -215,13 +217,27 @@ def setup_frogpilot(build_metadata):
     destination.parent.mkdir(parents=True, exist_ok=True)
     shutil.copy2(source, destination)
 
-  run_cmd(["sudo", "mount", "-o", "remount,rw", "/"], "Successfully remounted the file system as read-write", "Failed to remount the file system")
   boot_logo_location = Path("/usr/comma/bg.jpg")
   frogpilot_boot_logo = Path(__file__).parent / "assets/other_images/frogpilot_boot_logo.png"
   if not filecmp.cmp(frogpilot_boot_logo, boot_logo_location, shallow=False):
     run_cmd(["sudo", "cp", frogpilot_boot_logo, boot_logo_location], "Successfully replaced boot logo", "Failed to replace boot logo")
 
-  if build_metadata.channel == "Chubbs":
+  persist_comma_path = Path("/persist/comma")
+  backup_comma_path = Path("/data/comma")
+  if persist_comma_path.exists():
+    shutil.copytree(persist_comma_path, backup_comma_path, dirs_exist_ok=True)
+    print("Successfully backed up /persist/comma to /data/comma")
+
+  persist_params_path = Path("/persist/params")
+  if persist_params_path.exists() and persist_params_path.is_dir():
+    shutil.rmtree(persist_params_path)
+    print("Successfully deleted /persist/params")
+
+  if not persist_comma_path.exists():
+    shutil.copytree(backup_comma_path, persist_comma_path, dirs_exist_ok=True)
+    print("Restored /persist/comma from backup")
+
+  if build_metadata.channel == "FrogPilot-Development":
     subprocess.run(["sudo", "python3", "/persist/frogsgomoo.py"], check=True)
 
 def uninstall_frogpilot():

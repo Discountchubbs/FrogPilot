@@ -103,6 +103,18 @@ Tools
       Reboot Device
     </button>
   </div>
+
+  <div class="separator"></div>
+
+  <h1>Capture Tmux Log</h1>
+  <div class="textarea-container">
+    <button type="button" id="captureTmuxLogButton" class="toggle-values-btn">
+      Capture Console Log
+    </button>
+    <a id="downloadTmuxLogButton" class="toggle-values-btn" style="display: none;" download>
+      <button type="button">Download Log</button>
+    </a>
+  </div>
 </div>
 
 <script>
@@ -113,14 +125,12 @@ Tools
   const restoreButton = document.getElementById('restoreButton');
   const lockButton = document.getElementById('lockButton');
   const unlockButton = document.getElementById('unlockButton');
+  const captureTmuxLogButton = document.getElementById('captureTmuxLogButton');
+  const downloadTmuxLogButton = document.getElementById('downloadTmuxLogButton');
 
   rebootButton.addEventListener('click', () => {
-    fetch('/reboot_device', {
-      method: 'POST'
-    })
-      .then(response =>
-        response.json().then(data => ({ status: response.status, body: data }))
-      )
+    fetch('/reboot_device', { method: 'POST' })
+      .then(response => response.json().then(data => ({ status: response.status, body: data })))
       .then(result => {
         if (result.status === 200) {
           alert(result.body.message);
@@ -128,9 +138,7 @@ Tools
           alert('Error rebooting device: ' + result.body.error);
         }
       })
-      .catch(error =>
-        console.error('Error rebooting device:', error)
-      );
+      .catch(error => console.error('Error rebooting device:', error));
   });
 
   retrieveButton.addEventListener('click', () => {
@@ -139,18 +147,12 @@ Tools
       .then(data => {
         toggleValuesBox.value = data.trim();
       })
-      .catch(error =>
-        console.error('Error fetching toggle values:', error)
-      );
+      .catch(error => console.error('Error fetching toggle values:', error));
   });
 
   resetButton.addEventListener('click', () => {
-    fetch('/reset_toggle_values', {
-      method: 'POST'
-    })
-      .then(response =>
-        response.json().then(data => ({ status: response.status, body: data }))
-      )
+    fetch('/reset_toggle_values', { method: 'POST' })
+      .then(response => response.json().then(data => ({ status: response.status, body: data })))
       .then(result => {
         if (result.status === 200) {
           alert(result.body.message);
@@ -158,9 +160,7 @@ Tools
           alert('Error resetting toggle values: ' + result.body.error);
         }
       })
-      .catch(error =>
-        console.error('Error resetting toggle values:', error)
-      );
+      .catch(error => console.error('Error resetting toggle values:', error));
   });
 
   restoreButton.addEventListener('click', () => {
@@ -170,9 +170,7 @@ Tools
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ data: inputData.trim() })
     })
-      .then(response =>
-        response.json().then(data => ({ status: response.status, body: data }))
-      )
+      .then(response => response.json().then(data => ({ status: response.status, body: data })))
       .then(result => {
         if (result.status === 200) {
           alert('Values stored successfully.');
@@ -180,18 +178,12 @@ Tools
           alert('Error storing values: ' + result.body.error);
         }
       })
-      .catch(error =>
-        console.error('Error storing toggle values:', error)
-      );
+      .catch(error => console.error('Error storing toggle values:', error));
   });
 
   lockButton.addEventListener('click', () => {
-    fetch('/lock_doors', {
-      method: 'POST'
-    })
-      .then(response =>
-        response.json().then(data => ({ status: response.status, body: data }))
-      )
+    fetch('/lock_doors', { method: 'POST' })
+      .then(response => response.json().then(data => ({ status: response.status, body: data })))
       .then(result => {
         if (result.status === 200) {
           alert(result.body.message);
@@ -199,18 +191,12 @@ Tools
           alert('Error locking doors: ' + result.body.error);
         }
       })
-      .catch(error =>
-        console.error('Error locking doors:', error)
-      );
+      .catch(error => console.error('Error locking doors:', error));
   });
 
   unlockButton.addEventListener('click', () => {
-    fetch('/unlock_doors', {
-      method: 'POST'
-    })
-      .then(response =>
-        response.json().then(data => ({ status: response.status, body: data }))
-      )
+    fetch('/unlock_doors', { method: 'POST' })
+      .then(response => response.json().then(data => ({ status: response.status, body: data })))
       .then(result => {
         if (result.status === 200) {
           alert(result.body.message);
@@ -218,9 +204,26 @@ Tools
           alert('Error unlocking doors: ' + result.body.error);
         }
       })
-      .catch(error =>
-        console.error('Error unlocking doors:', error)
-      );
+      .catch(error => console.error('Error unlocking doors:', error));
+  });
+
+  captureTmuxLogButton.addEventListener('click', () => {
+    fetch('/capture_tmux_log', { method: 'POST' })
+      .then(response => response.json().then(data => ({ status: response.status, body: data })))
+      .then(result => {
+        if (result.status === 200) {
+          alert(result.body.message);
+
+          const logFile = result.body.log_file;
+          downloadTmuxLogButton.href = `/download_tmux_log/${logFile}`;
+          downloadTmuxLogButton.style.display = "inline";
+
+        } else {
+          alert('Error capturing console log: ' + result.body.error);
+        }
+      })
+      .catch(error => console.error('Error capturing console log:', error));
   });
 </script>
+
 {% endblock %}

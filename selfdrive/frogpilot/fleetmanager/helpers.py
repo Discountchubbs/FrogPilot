@@ -29,6 +29,7 @@ import subprocess
 
 import openpilot.system.sentry as sentry
 
+from datetime import datetime
 from pathlib import Path
 from typing import List
 from urllib.parse import quote
@@ -60,9 +61,11 @@ PRESERVE_COUNT = 5
 if PC:
   SCREENRECORD_PATH = os.path.join(str(Path.home()), ".comma", "media", "screen_recordings", "")
   ERROR_LOGS_PATH = os.path.join(str(Path.home()), ".comma", "community", "crashes", "")
+  TMUX_LOGS_PATH = os.path.join(str(Path.home()), ".comma", "tmux_logs")
 else:
   SCREENRECORD_PATH = "/data/media/screen_recordings/"
   ERROR_LOGS_PATH = sentry.CRASHES_DIR
+  TMUX_LOGS_PATH = "/data/tmux_logs/"
 
 
 def list_files(path): # still used for footage
@@ -486,6 +489,27 @@ def store_toggle_values(request_data):
     params.put(key, value)
 
   update_frogpilot_toggles()
+
+def capture_tmux_log():
+  os.makedirs(TMUX_LOGS_PATH, exist_ok=True)
+
+  timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+  log_filename = f"tmux_log_{timestamp}.txt"
+  log_path = os.path.join(TMUX_LOGS_PATH, log_filename)
+
+  try:
+    subprocess.run(["tmux", "capture-pane", "-J", "-S", "-"], check=True)
+    result = subprocess.run(["tmux", "show-buffer"], capture_output=True, text=True, check=True)
+
+    with open(log_path, "w", encoding="utf-8") as log_file:
+      log_file.write(result.stdout)
+
+    subprocess.run(["tmux", "delete-buffer"], check=True)
+
+    return log_filename
+
+  except subprocess.CalledProcessError as e:
+    raise Exception(f"Error capturing tmux log: {e}")
 
 def lock_doors():
   panda = Panda()
