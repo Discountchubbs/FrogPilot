@@ -68,7 +68,7 @@ class LatControlTorque(LatControl):
     super().__init__(CP, CI)
     self.torque_params = CP.lateralTuning.torque
     self.pid = PIDController(self.torque_params.kp, self.torque_params.ki,
-                             k_f=self.torque_params.kf, pos_limit=self.steer_max, neg_limit=-self.steer_max, lateral_pid=True)
+                             k_f=self.torque_params.kf, pos_limit=self.steer_max, neg_limit=-self.steer_max)
     self.torque_from_lateral_accel = CI.torque_from_lateral_accel()
     self.use_steering_angle = self.torque_params.useSteeringAngle
     self.steering_angle_deadzone_deg = self.torque_params.steeringAngleDeadzoneDeg
@@ -247,7 +247,7 @@ class LatControlTorque(LatControl):
       output_torque = self.pid.update(pid_log.error,
                                       feedforward=ff,
                                       speed=CS.vEgo,
-                                      freeze_integrator=freeze_integrator, frogpilot_toggles=frogpilot_toggles)
+                                      freeze_integrator=freeze_integrator)
 
       pid_log.active = True
       pid_log.p = self.pid.p

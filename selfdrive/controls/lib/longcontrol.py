@@ -96,11 +96,6 @@ class LongControl:
     self.v_pid = 0.0
     self.last_output_accel = 0.0
 
-    # FrogPilot variables
-    self.CP = CP
-
-    self.updated_pid = False
-
   def reset(self):
     self.pid.reset()
 
@@ -130,75 +125,9 @@ class LongControl:
     else:  # LongCtrlState.pid
       error = a_target - CS.aEgo
       output_accel = self.pid.update(error, speed=CS.vEgo,
-                                     feedforward=a_target, frogpilot_toggles=frogpilot_toggles)
+                                     feedforward=a_target)
 
     self.last_output_accel = clip(output_accel, accel_limits[0], accel_limits[1])
-    return self.last_output_accel
-
-  def reset_old_long(self, v_pid):
-    """Reset PID controller and change setpoint"""
-    self.pid.reset()
-    self.v_pid = v_pid
-
-  def update_old_long(self, active, CS, long_plan, accel_limits, t_since_plan, frogpilot_toggles):
-    """Update longitudinal control. This updates the state machine and runs a PID loop"""
-    # Interp control trajectory
-    speeds = long_plan.speeds
-    if len(speeds) == CONTROL_N:
-      v_target_now = interp(t_since_plan, CONTROL_N_T_IDX, speeds)
-      a_target_now = interp(t_since_plan, CONTROL_N_T_IDX, long_plan.accels)
-
-      v_target = interp(self.CP.longitudinalActuatorDelay + t_since_plan, CONTROL_N_T_IDX, speeds)
-      a_target = 2 * (v_target - v_target_now) / self.CP.longitudinalActuatorDelay - a_target_now
-
-      v_target_1sec = interp(self.CP.longitudinalActuatorDelay + t_since_plan + 1.0, CONTROL_N_T_IDX, speeds)
-    else:
-      v_target = 0.0
-      v_target_now = 0.0
-      v_target_1sec = 0.0
-      a_target = 0.0
-
-    self.pid.neg_limit = accel_limits[0]
-    self.pid.pos_limit = accel_limits[1]
-
-    output_accel = self.last_output_accel
-    self.long_control_state = long_control_state_trans_old_long(self.CP, active, self.long_control_state, CS.vEgo,
-                                                                v_target, v_target_1sec, CS.brakePressed,
-                                                                CS.cruiseState.standstill)
-
-    if self.long_control_state == LongCtrlState.off:
-      self.reset_old_long(CS.vEgo)
-      output_accel = 0.
-
-    elif self.long_control_state == LongCtrlState.stopping:
-      if output_accel > self.CP.stopAccel:
-        output_accel = min(output_accel, 0.0)
-        output_accel -= self.CP.stoppingDecelRate * DT_CTRL
-      self.reset_old_long(CS.vEgo)
-
-    elif self.long_control_state == LongCtrlState.starting:
-      output_accel = self.CP.startAccel
-      self.reset_old_long(CS.vEgo)
-
-    elif self.long_control_state == LongCtrlState.pid:
-      self.v_pid = v_target_now
-
-      # Toyota starts braking more when it thinks you want to stop
-      # Freeze the integrator so we don't accelerate to compensate, and don't allow positive acceleration
-      # TODO too complex, needs to be simplified and tested on toyotas
-      prevent_overshoot = not self.CP.stoppingControl and CS.vEgo < 1.5 and v_target_1sec < 0.7 and v_target_1sec < self.v_pid
-      deadzone = interp(CS.vEgo, self.CP.longitudinalTuning.deadzoneBP, self.CP.longitudinalTuning.deadzoneV)
-      freeze_integrator = prevent_overshoot
-
-      error = self.v_pid - CS.vEgo
-      error_deadzone = apply_deadzone(error, deadzone)
-      output_accel = self.pid.update(error_deadzone, speed=CS.vEgo,
-                                     feedforward=a_target,
-                                     freeze_integrator=freeze_integrator,
-                                     frogpilot_toggles=frogpilot_toggles)
-
-    self.last_output_accel = clip(output_accel, accel_limits[0], accel_limits[1])
-
     return self.last_output_accel
 
   def reset_old_long(self, v_pid):
