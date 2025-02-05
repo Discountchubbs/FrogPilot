@@ -157,6 +157,7 @@ FrogPilotVehiclesPanel::FrogPilotVehiclesPanel(FrogPilotSettingsWindow *parent) 
 
     {"HKGToggles", tr("Hyundai/Kia/Genesis Toggles"), tr("Toggles catered towards 'Hyundai/Kia/Genesis' vehicles."), ""},
     {"HKGtuning", tr("Chubbs' Custom Tuning"), tr("Chubbs' Custom tuning for Hyundai/Kia/Genesis vehicles, which smoothes acceleration and braking to help achieve a 'limo' stop."), ""},
+    {"HyundaiRadarTracksToggle", tr("Enable Radar Tracks"), tr("Enable this to attempt to enable radar tracks for Hyundai, Kia, and Genesis models equipped with the supported Mando SCC radar."), ""},
     {"NewLongAPI", tr("Enable comma's New Longitudinal API"), tr("Enable comma's new longitudinal control system that has shown great improvement with acceleration and braking, but has issues on some Hyundai/Kia/Genesis vehicles."), ""},
 
     {"ToyotaToggles", tr("Toyota/Lexus Toggles"), tr("Toggles catered towards 'Toyota/Lexus' vehicles."), ""},

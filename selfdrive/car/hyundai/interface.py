@@ -11,7 +11,8 @@ from openpilot.selfdrive.car.interfaces import CarInterfaceBase
 from openpilot.selfdrive.car.disable_ecu import disable_ecu
 
 from openpilot.selfdrive.frogpilot.frogpilot_variables import params
-from openpilot.selfdrive.car.hyundai.longitudinal_tuning import HKGLongitudinalController
+from openpilot.selfdrive.car.hyundai.chubbs.longitudinal_tuning import HKGLongitudinalController
+from openpilot.selfdrive.car.hyundai.chubbs.radar_tracks import RadarTrackController
 
 Ecu = car.CarParams.Ecu
 ButtonType = car.CarState.ButtonEvent.Type
@@ -24,6 +25,10 @@ BUTTONS_DICT = {Buttons.RES_ACCEL: ButtonType.accelCruise, Buttons.SET_DECEL: Bu
 
 
 class CarInterface(CarInterfaceBase):
+  def __init__(self, CP, CarController, CarState):
+    super().__init__(CP, CarController, CarState)
+    self.radar_track_controller = None
+
   @staticmethod
   def _get_params(ret, candidate, fingerprint, car_fw, disable_openpilot_long, experimental_long, docs):
     use_new_api = params.get_bool("NewLongAPI")
@@ -179,6 +184,13 @@ class CarInterface(CarInterfaceBase):
 
   @staticmethod
   def init(CP, logcan, sendcan):
+    radar_track_controller = RadarTrackController(CP)
+    radar_enabled = False
+
+    if hasattr(params, "get_bool"):
+      radar_track_controller.setup(params)
+      radar_enabled = radar_track_controller.initialize(params, logcan, sendcan)
+
     if CP.openpilotLongitudinalControl and not (CP.flags & HyundaiFlags.CANFD_CAMERA_SCC.value):
       addr, bus = 0x7d0, 0
       if CP.flags & HyundaiFlags.CANFD_HDA2.value:
@@ -189,8 +201,17 @@ class CarInterface(CarInterfaceBase):
     if CP.flags & HyundaiFlags.ENABLE_BLINKERS:
       disable_ecu(logcan, sendcan, bus=CanBus(CP).ECAN, addr=0x7B1, com_cont_req=b'\x28\x83\x01')
 
+    return radar_enabled
+
   def _update(self, c, frogpilot_toggles):
     ret, fp_ret = self.CS.update(self.cp, self.cp_cam, frogpilot_toggles)
+
+    # Update radar tracks status
+    if hasattr(params, "get_bool") and self.CP.flags & HyundaiFlags.ENABLE_RADAR_TRACKS:
+      if self.radar_track_controller is None:
+        self.radar_track_controller = RadarTrackController(self.CP)
+      self.radar_tracks_enabled = True
+      ret.events.add(EventName.hyundaiRadarTracksConfirmed)
 
     if self.CS.CP.openpilotLongitudinalControl:
       ret.buttonEvents = [

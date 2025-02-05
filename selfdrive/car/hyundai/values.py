@@ -99,6 +99,7 @@ class HyundaiFlags(IntFlag):
   CAN_LFA_BTN = 2 ** 24
   LKAS12 = 2 ** 25
   NAV_MSG = 2 ** 26
+  ENABLE_RADAR_TRACKS = 2 ** 27
 
 class Footnote(Enum):
   CANFD = CarFootnote(

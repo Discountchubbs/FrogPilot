@@ -148,6 +148,7 @@ struct CarEvent @0x9b1657f34caf3ad3 {
     vCruise69 @148;
     yourFrogTriedToKillMe @149;
     youveGotMail @150;
+    hyundaiRadarTracksConfirmed @151;
 
     radarCanErrorDEPRECATED @15;
     communityFeatureDisallowedDEPRECATED @62;

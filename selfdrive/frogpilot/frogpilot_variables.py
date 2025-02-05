@@ -11,6 +11,7 @@ from openpilot.common.conversions import Conversions as CV
 from openpilot.common.numpy_fast import clip, interp
 from openpilot.common.params import Params, UnknownKeyName
 from openpilot.selfdrive.car.gm.values import GMFlags
+from openpilot.selfdrive.car.hyundai.values import HyundaiFlags
 from openpilot.selfdrive.controls.lib.desire_helper import LANE_CHANGE_SPEED_MIN
 from openpilot.selfdrive.modeld.constants import ModelConstants
 from openpilot.system.hardware.power_monitoring import VBATT_PAUSE_CHARGING
@@ -168,6 +169,8 @@ frogpilot_default_params: list[tuple[str, str | bytes, int]] = [
   ("HumanAcceleration", "1", 2),
   ("HumanFollowing", "1", 2),
   ("HKGtuning", "0", 2),
+  ("HyundaiRadarTracks", "0", 2),
+  ("HyundaiRadarTracksToggle", "0", 2),
   ("IncreasedStoppedDistance", "0", 2),
   ("IncreaseThermalLimits", "0", 3),
   ("JerkInfo", "0", 3),
@@ -567,8 +570,8 @@ class FrogPilotVariables:
     toggle.device_shutdown_time = (device_shutdown_setting - 3) * 3600 if device_shutdown_setting >= 4 else device_shutdown_setting * (60 * 15)
     toggle.increase_thermal_limits = device_management and (params.get_bool("IncreaseThermalLimits") if tuning_level >= level["IncreaseThermalLimits"] else default.get_bool("IncreaseThermalLimits"))
     toggle.low_voltage_shutdown = clip(params.get_float("LowVoltageShutdown"), VBATT_PAUSE_CHARGING, 12.5) if device_management and tuning_level >= level["LowVoltageShutdown"] else default.get_float("LowVoltageShutdown")
-    toggle.no_logging = True #(device_management and (params.get_bool("NoLogging") if tuning_level >= level["NoLogging"] else default.get_bool("NoLogging")) or self.development_branch) and not self.vetting_branch
-    toggle.no_uploads = True #(device_management and (params.get_bool("NoUploads") if tuning_level >= level["NoUploads"] else default.get_bool("NoUploads")) or self.development_branch) and not self.vetting_branch
+    toggle.no_logging = (device_management and (params.get_bool("NoLogging") if tuning_level >= level["NoLogging"] else default.get_bool("NoLogging")) or self.development_branch) and not self.vetting_branch
+    toggle.no_uploads = (device_management and (params.get_bool("NoUploads") if tuning_level >= level["NoUploads"] else default.get_bool("NoUploads")) or self.development_branch) and not self.vetting_branch
     toggle.no_onroad_uploads = toggle.no_uploads and (params.get_bool("DisableOnroadUploads") if tuning_level >= level["DisableOnroadUploads"] else default.get_bool("DisableOnroadUploads"))
     toggle.offline_mode = device_management and (params.get_bool("OfflineMode") if tuning_level >= level["OfflineMode"] else default.get_bool("OfflineMode"))
 
@@ -578,6 +581,7 @@ class FrogPilotVariables:
     vEgoStarting = 0.15 if toggle.experimental_gm_tune else vEgoStarting
 
     toggle.hkg_tuning = openpilot_longitudinal and toggle.car_make == "hyundai" and params.get_bool("HKGtuning") if tuning_level >= level["HKGtuning"] else default.get_bool("HKGtuning")
+    toggle.hyundai_radar_tracks = openpilot_longitudinal and toggle.car_make == "hyundai" and HyundaiFlags.MANDO_RADAR and (params.get_bool("HyundaiRadarTracksToggle") if tuning_level >= level["HyundaiRadarTracksToggle"] else default.get_bool("HyundaiRadarTracksToggle"))
 
     toggle.experimental_mode_via_press = openpilot_longitudinal and (params.get_bool("ExperimentalModeActivation") if tuning_level >= level["ExperimentalModeActivation"] else default.get_bool("ExperimentalModeActivation"))
     toggle.experimental_mode_via_distance = toggle.experimental_mode_via_press and (params.get_bool("ExperimentalModeViaDistance") if tuning_level >= level["ExperimentalModeViaDistance"] else default.get_bool("ExperimentalModeViaDistance"))

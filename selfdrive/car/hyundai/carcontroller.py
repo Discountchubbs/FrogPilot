@@ -10,7 +10,7 @@ from openpilot.selfdrive.car.hyundai.values import HyundaiFlags, Buttons, CarCon
 from openpilot.selfdrive.car.interfaces import CarControllerBase
 
 from openpilot.selfdrive.frogpilot.controls.lib.frogpilot_acceleration import get_max_allowed_accel
-from openpilot.selfdrive.car.hyundai.longitudinal_tuning import HKGLongitudinalController, LongitudinalMode
+from openpilot.selfdrive.car.hyundai.chubbs.longitudinal_tuning import HKGLongitudinalController, LongitudinalMode
 
 VisualAlert = car.CarControl.HUDControl.VisualAlert
 LongCtrlState = car.CarControl.Actuators.LongControlState

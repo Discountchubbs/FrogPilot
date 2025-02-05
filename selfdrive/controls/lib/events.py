@@ -548,6 +548,10 @@ EVENTS: dict[int, dict[str, Alert | AlertCallbackType]] = {
       Priority.HIGH, VisualAlert.steerRequired, AudibleAlert.warningImmediate, .1),
   },
 
+  EventName.hyundaiRadarTracksConfirmed: {
+    ET.PERMANENT: NormalPermanentAlert("Radar tracks available. Restart the car to configure.")
+  },
+
   EventName.manualRestart: {
     ET.WARNING: Alert(
       "TAKE CONTROL",
