@@ -244,6 +244,7 @@ std::unordered_map<std::string, uint32_t> keys = {
     {"BlindSpotMetrics", PERSISTENT | FROGPILOT_VISUALS},
     {"BlindSpotPath", PERSISTENT | FROGPILOT_VISUALS},
     {"BorderMetrics", PERSISTENT | FROGPILOT_VISUALS},
+    {"BrakeSignal", PERSISTENT | FROGPILOT_VISUALS},
     {"CameraView", PERSISTENT | FROGPILOT_VISUALS},
     {"CancelModelDownload", CLEAR_ON_MANAGER_START},
     {"CancelThemeDownload", CLEAR_ON_MANAGER_START},
