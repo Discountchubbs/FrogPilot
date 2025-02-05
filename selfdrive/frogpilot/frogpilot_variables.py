@@ -166,6 +166,7 @@ frogpilot_default_params: list[tuple[str, str | bytes, int]] = [
   ("HolidayThemes", "1", 0),
   ("HumanAcceleration", "1", 2),
   ("HumanFollowing", "1", 2),
+  ("HKGtuning", "0", 2),
   ("IncreasedStoppedDistance", "0", 2),
   ("IncreaseThermalLimits", "0", 3),
   ("JerkInfo", "0", 3),
@@ -574,6 +575,8 @@ class FrogPilotVariables:
     stoppingDecelRate = 0.3 if toggle.experimental_gm_tune else stoppingDecelRate
     vEgoStopping = 0.15 if toggle.experimental_gm_tune else vEgoStopping
     vEgoStarting = 0.15 if toggle.experimental_gm_tune else vEgoStarting
+
+    toggle.hkg_tuning = openpilot_longitudinal and toggle.car_make == "hyundai" and params.get_bool("HKGtuning") if tuning_level >= level["HKGtuning"] else default.get_bool("HKGtuning")
 
     toggle.experimental_mode_via_press = openpilot_longitudinal and (params.get_bool("ExperimentalModeActivation") if tuning_level >= level["ExperimentalModeActivation"] else default.get_bool("ExperimentalModeActivation"))
     toggle.experimental_mode_via_distance = toggle.experimental_mode_via_press and (params.get_bool("ExperimentalModeViaDistance") if tuning_level >= level["ExperimentalModeViaDistance"] else default.get_bool("ExperimentalModeViaDistance"))
